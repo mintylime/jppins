@@ -1,9 +1,9 @@
 // Trip Pins service worker: keeps the app and viewed map tiles working offline.
-const VERSION = 'trippins-v1';
+const VERSION = 'trippins-v2';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 const CDN = /^(https:\/\/cdnjs\.cloudflare\.com|https:\/\/fonts\.(googleapis|gstatic)\.com)/;
-const TILES = /basemaps\.cartocdn\.com/;
-const MAX_TILES = 600;
+const TILES = /tile\.openstreetmap\.org/;
+const MAX_TILES = 400;
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));

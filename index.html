@@ -236,8 +236,14 @@ details.more summary { font-size: 14px; color: var(--muted); cursor: pointer; }
   position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 90px); transform: translate(-50%, 20px);
   background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-size: 15px;
   opacity: 0; pointer-events: none; transition: .25s; z-index: 2000; max-width: calc(100% - 32px);
+  display: flex; align-items: center; gap: 14px;
 }
-#toast.show { opacity: 1; transform: translate(-50%, 0); }
+#toast.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+#toast button {
+  border: 0; background: transparent; color: var(--accent); font-weight: 700; font-size: 15px;
+  padding: 6px 2px; margin: -6px 0; white-space: nowrap;
+}
+.btn.danger.armed { background: #C0392B; border-color: #C0392B; color: #fff; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 </style>
 </head>
@@ -394,9 +400,12 @@ const store = {
   set(k, v) { try { localStorage.setItem('tp.' + k, JSON.stringify(v)); } catch (e) {} },
 };
 let toastTimer;
-function toast(msg) {
-  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
-  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+function toast(msg, action) {
+  const t = $('#toast');
+  t.innerHTML = `<span>${esc(msg)}</span>` + (action ? `<button type="button">${esc(action.label)}</button>` : '');
+  if (action) t.querySelector('button').onclick = () => { t.classList.remove('show'); action.fn(); };
+  t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), action ? 7000 : 2600);
 }
 function catOf(p) { return CATS[p.category] ? p.category : 'other'; }
 function hasPin(p) { return p.lat != null && p.lng != null && p.lat !== '' && isFinite(p.lat); }
@@ -617,9 +626,10 @@ let map = null, markerLayer = null, meMarker = null, markers = {};
 function ensureMap() {
   if (map || !window.L) return !!map;
   map = L.map('map', { zoomControl: false, attributionControl: true }).setView([34.6873, 135.5262], 13);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-    maxZoom: 19, subdomains: 'abcd',
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+  // OpenStreetMap's own tiles: free, no key or account needed.
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
   }).addTo(map);
   markerLayer = L.layerGroup().addTo(map);
   map.on('click', hidePeek);
@@ -717,7 +727,7 @@ function openEdit(p) {
   editing = p; draft = { lat: p.lat, lng: p.lng, placeId: p.placeId, link: p.link }; chosenCat = catOf(p);
   $('#placeTitle').textContent = 'Edit place';
   $('#findBox').hidden = true; $('#relocBtn').hidden = false;
-  $('#beenRow').hidden = false; $('#delBtn').hidden = false;
+  $('#beenRow').hidden = false; $('#delBtn').hidden = false; resetDel();
   $('#fWhy').value = p.why || ''; $('#fName').value = p.name || '';
   $('#fAbout').value = p.about || ''; $('#fAddr').value = p.address || '';
   $('#fBeen').checked = !!p.been;
@@ -783,7 +793,8 @@ async function savePlace(ev) {
       payload.near = cfg.near;
       const j = await api('add', payload);
       items.push(j.item);
-      toast(`Saved ${j.item.name}`);
+      const added = j.item;
+      toast(`Saved ${added.name}`, { label: 'Undo', fn: () => removePlace(added) });
     }
     store.set(cfg.demo ? 'demoItems' : 'items', items);
     sheet.close(); render();
@@ -799,15 +810,31 @@ async function toggleBeen(p) {
   catch (e) { p.been = !p.been; render(); toast(e.message); }
 }
 
-async function deletePlace() {
-  if (!editing || !confirm(`Delete ${editing.name}?`)) return;
+async function removePlace(p) {
   try {
-    await api('delete', { id: editing.id });
-    items = items.filter(x => x !== editing);
+    await api('delete', { id: p.id });
+    items = items.filter(x => x.id !== p.id);
     store.set(cfg.demo ? 'demoItems' : 'items', items);
-    sheet.close(); hidePeek(); render(); toast('Deleted');
+    if ($('#peek').dataset.id === p.id) hidePeek();
+    render(); toast(`Deleted ${p.name || 'place'}`);
   } catch (e) { toast(e.message); }
 }
+let delTimer;
+function deletePlace() {
+  const b = $('#delBtn');
+  if (!editing) return;
+  // First tap arms the button; second tap deletes. No pop-up needed.
+  if (!b.classList.contains('armed')) {
+    b.classList.add('armed'); b.textContent = 'Tap again to delete';
+    clearTimeout(delTimer); delTimer = setTimeout(resetDel, 4000);
+    return;
+  }
+  resetDel();
+  const p = editing;
+  sheet.close();
+  removePlace(p);
+}
+function resetDel() { const b = $('#delBtn'); b.classList.remove('armed'); b.textContent = 'Delete'; }
 
 // ---------------------------------------------------------------- settings
 const setSheet = $('#setSheet');

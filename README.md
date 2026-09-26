@@ -88,6 +88,7 @@ If the notification says *Saved:* with no name, the key or URL is probably wrong
 - **Go** opens Google Maps with directions. The square arrow button opens the place's Google Maps page (hours, reviews, photos).
 - **✓** marks a place as visited. The chip *Hide visited* tidies the list.
 - **Edit** (pencil) changes anything. If a place has *No pin yet*, fix the name or area and tap **Find**.
+- **Saved the wrong thing?** Tap **Undo** in the message that pops up after saving. Later on, open **Edit** and tap **Delete** twice (the first tap turns it red, the second removes it). Deleting a row in the Sheet works too.
 - You can also tidy or bulk-edit straight in the Google Sheet; the app picks up changes when you reopen it.
 - The app keeps a copy on the phone, so the list (and map tiles you've already viewed) still work on a weak signal. Saving needs a connection.
 
@@ -107,4 +108,4 @@ Google sometimes changes the shape of its links. When a lookup misses, the place
 | `icon-*.png`, `apple-touch-icon.png` | Home-screen icons |
 | `Code.gs` | The Google Sheet backend (goes in Apps Script, not GitHub) |
 
-Map tiles © OpenStreetMap contributors © CARTO. Map library: Leaflet.
+The map uses Leaflet (the free map library) with OpenStreetMap's own tiles, and neither needs a key or an account. Map data © OpenStreetMap contributors.
