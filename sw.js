@@ -1,5 +1,5 @@
 // Trip Pins service worker: keeps the app and viewed map tiles working offline.
-const VERSION = 'trippins-v4';
+const VERSION = 'trippins-v5';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 const CDN = /^(https:\/\/cdnjs\.cloudflare\.com|https:\/\/fonts\.(googleapis|gstatic)\.com)/;
 const TILES = /tile\.openstreetmap\.org/;

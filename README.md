@@ -17,8 +17,11 @@ Setup takes about 20 minutes, in four parts. You do parts 1 and 2 once, part 3 o
    - The **Execution log** at the bottom shows `Your KEY is: …`. Copy it somewhere.
 4. **Deploy → New deployment.** Click the gear next to *Select type* and choose **Web app**.
    - Execute as: **Me**
-   - Who has access: **Anyone**
+   - Who has access: **Anyone**. Not *Anyone with Google account*: that one makes phones hit a sign-in page, and the app can't connect.
    - Press **Deploy** and copy the **Web app URL** (it ends in `/exec`).
+5. **Check it on your phone.** Open the web app URL in the phone's browser. You should see a short line of text containing *"Your Sheet is reachable"*. If you see anything else, jump to [If it won't connect](#if-it-wont-connect).
+
+If *Anyone* isn't offered in step 4, the Google account belongs to a work or school organisation that blocks public web apps. Make the Sheet in a personal Gmail account instead.
 
 The URL and key together work like a password. Anyone with both can read and add to your list, so don't post them anywhere. Neither one goes into GitHub.
 
@@ -115,7 +118,25 @@ Two phones can save at exactly the same moment; the Sheet takes them one at a ti
 - You can also tidy or bulk-edit straight in the Google Sheet; the app picks up changes when you reopen it.
 - The app keeps a copy on the phone, so the list (and map tiles you've already viewed) still work on a weak signal. Saving needs a connection.
 
+## If it won't connect
+
+*"Couldn't reach your Sheet"* (Safari used to say *"Load failed"*) means the phone got no usable reply, so the key hasn't even been checked. Open the web app URL with `?action=ping` on the end in the phone's browser (the app gives you this link) and match what you see:
+
+| The test page shows | Fix |
+|---|---|
+| *"Your Sheet is reachable"* | The Sheet's fine. Go back and tap Connect again. |
+| A Google sign-in page, or *"You need access"* | Deploy → Manage deployments → pencil → *Who has access*: **Anyone** → Deploy. |
+| *"Authorization is required"* | In Apps Script, run **setup** again and approve, then deploy a New version. |
+| *"Script function not found: doGet"* | The new Code.gs isn't live: Deploy → Manage deployments → pencil → Version: **New version** → Deploy. |
+| *"Sorry, unable to open the file at this time"* | You're signed into several Google accounts in that browser. Try a private window. |
+| *"…not attached to a Google Sheet"* | The script was made at script.google.com. Make it from the Sheet instead (Extensions → Apps Script). |
+| *"Run setup()…"* | Run **setup** in Apps Script, then deploy a New version. |
+
+*"The key doesn't match this Sheet"* is different: the Sheet answered, so only the key is wrong. Copy it again from the Apps Script execution log (run **setup** to show it).
+
 ## What happens behind the scenes
+
+The app talks to your Sheet by loading its reply like a small script file, rather than the usual background request. Safari blocks the usual kind when Google redirects it between its own servers, which is where the old *"Load failed"* came from. The usual kind is still used as a backup, and for very long notes.
 
 When you share a link, the script in your Sheet follows Google's short link (`maps.app.goo.gl/…`) to the full Maps address, which usually carries the place name and exact coordinates. When a link doesn't give coordinates (Google Search results, typed names), it falls back to Google's geocoder, which Apps Script offers free. Google caps free lookups per day; a trip uses a few dozen.
 

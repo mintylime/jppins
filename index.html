@@ -213,8 +213,11 @@ textarea.in { resize: vertical; min-height: 76px; }
 .status.show { display: flex; }
 .status.ok { background: color-mix(in srgb, var(--ok) 14%, var(--card)); }
 .status.bad { background: color-mix(in srgb, var(--warn) 16%, var(--card)); }
-.status b { display: block; }
-.status small { color: var(--muted); }
+.status > div > b { display: block; }
+.status small { color: var(--muted); display: block; }
+.status a { color: var(--accent); font-weight: 600; }
+.tips { margin: 8px 0 0; padding-left: 18px; font-size: 13px; }
+.tips li { margin: 6px 0; }
 .spinner { width: 16px; height: 16px; border: 2px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; flex: none; margin-top: 2px; }
 .catpick { display: flex; flex-wrap: wrap; gap: 6px; }
 .catpick button { border: 1px solid var(--line); background: var(--bg); border-radius: 999px; padding: 7px 12px; font-size: 14px; }
@@ -483,16 +486,85 @@ async function apiCall(action, payload, creds) {
   if (!creds && cfg.demo) return demoApi(action, payload);
   const c = creds || cfg;
   if (!c.url) throw new Error('Not connected yet: open Settings.');
-  const res = await fetch(c.url, {
-    method: 'POST', redirect: 'follow',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },   // avoids a CORS preflight
-    body: JSON.stringify(Object.assign({ k: c.key, action }, payload)),
-  });
-  let j;
-  try { j = await res.json(); } catch (e) { throw new Error('The Sheet sent back something odd. Check the URL is the /exec one.'); }
+  const body = Object.assign({ k: c.key, action }, payload);
+  const j = await send(c.url, body, action);
+  if (!j || typeof j !== 'object') throw new Error('The Sheet sent back something odd.');
   if (!j.ok) { const e = new Error(j.error || 'Request failed'); e.gone = !!j.gone; e.auth = !!j.auth; throw e; }
   return j;
 }
+
+// Two ways to talk to Apps Script. The "script tag" way (JSONP) loads the reply
+// like a script, so Safari's cross-site rules can't block it; plain fetch is the
+// backup (and carries very long requests). Whichever works is remembered.
+let transport = store.get('transport', 'jsonp');
+async function send(url, body, action) {
+  // The script-tag way puts the request in the address, which has a length limit
+  // (Japanese text takes up to 9 characters per character once encoded).
+  const long = encodeURIComponent(JSON.stringify(body)).length > 7000;
+  const order = long ? ['fetch'] : transport === 'fetch' ? ['fetch', 'jsonp'] : ['jsonp', 'fetch'];
+  let lastErr;
+  for (const how of order) {
+    try {
+      const j = how === 'jsonp' ? await viaScript(url, body, action === 'list' ? 15000 : 30000) : await viaFetch(url, body);
+      if (!long && how !== transport) { transport = how; store.set('transport', how); }
+      return j;
+    } catch (e) {
+      lastErr = e;
+      // A slow save may still have landed, so don't send it a second time.
+      if (e.timedOut && action !== 'list' && action !== 'resolve') break;
+    }
+  }
+  const e = new Error(navigator.onLine === false ? 'You’re offline.'
+    : long ? 'That’s too long to send in one go. Shorten the note and try again.' : 'Couldn’t reach your Sheet.');
+  e.network = true; e.detail = lastErr && lastErr.message;
+  throw e;
+}
+async function viaFetch(url, body) {
+  const res = await fetch(url, {
+    method: 'POST', redirect: 'follow',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },   // avoids a CORS preflight
+    body: JSON.stringify(body),
+  });
+  return res.json();
+}
+let cbN = 0;
+function viaScript(url, body, timeout) {
+  return new Promise((resolve, reject) => {
+    const name = `__tp${Date.now().toString(36)}${cbN++}`;
+    const el = document.createElement('script');
+    const u = new URL(url);
+    u.searchParams.set('p', JSON.stringify(body));
+    u.searchParams.set('callback', name);
+    let done = false;
+    const finish = (err, data) => {
+      if (done) return; done = true;
+      clearTimeout(timer); el.remove();
+      window[name] = () => {};                 // a late reply lands harmlessly
+      err ? reject(err) : resolve(data);
+    };
+    const timer = setTimeout(() => finish(Object.assign(new Error('No reply from the Sheet'), { timedOut: true })), timeout);
+    window[name] = data => finish(null, data);
+    el.onerror = () => finish(new Error('The Sheet’s reply couldn’t be loaded'));
+    el.src = u.href;
+    document.head.appendChild(el);
+  });
+}
+
+// Shown when a phone can't get any reply from the Sheet. The test page says which setting is off.
+function troubleHTML(url) {
+  const test = esc(String(url).replace(/\?.*$/, '') + '?action=ping');
+  return `<div>⚠️</div><div><b>Couldn’t reach your Sheet</b>
+    <small>This isn’t the key: the phone can’t get any reply yet. <a href="${test}" target="_blank" rel="noopener">Open this test page</a> and match what it shows:</small>
+    <ul class="tips">
+      <li><b>“Your Sheet is reachable”</b>: the Sheet is fine. Come back and tap Connect again.</li>
+      <li><b>A Google sign-in page, or “You need access”</b>: in Apps Script, Deploy → Manage deployments → pencil. Set <i>Who has access</i> to <b>Anyone</b> (not “Anyone with Google account”), then Deploy.</li>
+      <li><b>“Authorization is required”</b>: in Apps Script, run <i>setup</i> again and approve, then deploy a New version.</li>
+      <li><b>“Script function not found: doGet”</b>: the new Code.gs isn’t live yet. Deploy → Manage deployments → pencil → Version: New version → Deploy.</li>
+      <li><b>“Sorry, unable to open the file”</b>: you’re signed into several Google accounts. Open the test page in a private window.</li>
+      <li><b>A page saying the script isn’t attached to a Sheet</b>: make the script from the Sheet itself (Extensions → Apps Script).</li>
+    </ul></div>`;
+}
+
 function demoApi(action, p) {
   const wait = ms => new Promise(r => setTimeout(r, ms));
   return wait(action === 'resolve' || action === 'add' ? 700 : 150).then(() => {
@@ -1047,6 +1119,7 @@ async function submitConnect(ev) {
   $('#connectBtn').disabled = true;
   try { await afterConnect(await connectTo(url, key)); }
   catch (e) {
+    if (e.network) setStatus($('#setStatus'), 'bad', troubleHTML(url)); else
     setStatus($('#setStatus'), 'bad', `<div><b>Couldn’t connect</b><small>${esc(e.auth ? 'The key doesn’t match this Sheet.' : e.message)}</small></div>`);
   } finally { $('#connectBtn').disabled = false; }
 }
@@ -1117,7 +1190,7 @@ async function handleJoin(j) {
   if (connected()) { pendingJoin = j; openSettings(); return; }   // different Sheet: ask first
   toast('Connecting…');
   try { await afterConnect(await connectTo(j.url, j.key)); }
-  catch (e) { openSettings(); setStatus($('#setStatus'), 'bad', `<div><b>That link didn’t work</b><small>${esc(e.auth ? 'The key has changed since it was sent. Ask for a fresh link.' : e.message)}</small></div>`); }
+  catch (e) { openSettings(); if (e.network) setStatus($('#setStatus'), 'bad', troubleHTML(j.url)); else setStatus($('#setStatus'), 'bad', `<div><b>That link didn’t work</b><small>${esc(e.auth ? 'The key has changed since it was sent. Ask for a fresh link.' : e.message)}</small></div>`); }
 }
 
 // ---------------------------------------------------------------- events
