@@ -229,6 +229,18 @@ textarea.in { resize: vertical; min-height: 76px; }
 .sheet-foot .primary { flex: 1; }
 details.more { margin-top: 14px; }
 details.more summary { font-size: 14px; color: var(--muted); cursor: pointer; }
+.sec { font: 700 17px/1.2 var(--display); margin: 22px 0 2px; }
+#setSheet .sec:first-of-type { margin-top: 4px; }
+.sep { border-top: 1px solid var(--line); margin-top: 22px; padding-top: 4px; }
+.btn.wide { width: 100%; height: 48px; margin-top: 14px; font-size: 16px; }
+.conn-ok { margin: 6px 0 0; font-size: 15px; }
+.conn-ok .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); margin-right: 7px; vertical-align: 1px; }
+.kv { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 13px; }
+.kv span { width: 30px; color: var(--muted); flex: none; }
+.kv code { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: var(--soft); padding: 8px; border-radius: 8px; font-size: 12px; }
+.kv .btn { height: 34px; }
+.pad-bottom { height: calc(env(safe-area-inset-bottom) + 16px); }
+.status .btn { margin-top: 8px; }
 .check { display: flex; align-items: center; gap: 10px; margin-top: 14px; font-size: 15px; }
 .check input { width: 20px; height: 20px; accent-color: var(--accent); }
 
@@ -293,7 +305,7 @@ details.more summary { font-size: 14px; color: var(--muted); cursor: pointer; }
     <div class="grab"></div>
     <div class="sheet-head">
       <h2 id="placeTitle">Add a place</h2>
-      <button type="button" class="btn ghost" data-close>Cancel</button>
+      <button type="button" class="btn ghost" data-close autofocus>Cancel</button>
     </div>
 
     <div id="findBox">
@@ -334,30 +346,62 @@ details.more summary { font-size: 14px; color: var(--muted); cursor: pointer; }
 
 <!-- Settings sheet -->
 <dialog class="sheet" id="setSheet">
-  <form class="sheet-in" id="setForm" method="dialog" autocomplete="off">
+  <div class="sheet-in">
     <div class="grab"></div>
     <div class="sheet-head">
       <h2>Settings</h2>
-      <button type="button" class="btn ghost" data-close>Close</button>
+      <button type="button" class="btn ghost" data-close autofocus>Close</button>
     </div>
-    <p class="hint">Trip name and area are shared with every phone using this Sheet.</p>
-    <label class="f" for="sTrip">Trip name</label>
-    <input class="in" id="sTrip" placeholder="Osaka, October">
-    <label class="f" for="sNear">Where you're travelling</label>
-    <input class="in" id="sNear" placeholder="Osaka, Japan">
-    <p class="hint">Helps typed names like “Kuromon Market” find the right spot.</p>
+    <div class="status" id="joinStatus"></div>
 
-    <label class="f" for="sUrl">Google Sheet web app URL</label>
-    <input class="in" id="sUrl" inputmode="url" placeholder="https://script.google.com/macros/s/…/exec">
-    <label class="f" for="sKey">Key</label>
-    <input class="in" id="sKey" placeholder="from the setup log">
-    <div class="status" id="setStatus"></div>
+    <!-- Trip details: shared through the Sheet (or local in demo) -->
+    <form id="tripForm" autocomplete="off">
+      <h3 class="sec">This trip</h3>
+      <p class="hint" id="tripHint">Shared with every phone on this Sheet.</p>
+      <label class="f" for="sTrip">Trip name</label>
+      <input class="in" id="sTrip" placeholder="Osaka, October">
+      <label class="f" for="sNear">Where you're travelling</label>
+      <input class="in" id="sNear" placeholder="Osaka, Japan">
+      <p class="hint">Helps typed names like “Kuromon Market” find the right spot.</p>
+      <div class="status" id="tripStatus"></div>
+      <button type="submit" class="btn primary wide" id="tripSave">Save trip details</button>
+    </form>
 
-    <div class="sheet-foot">
-      <button type="button" class="btn" id="demoBtn">Try demo</button>
-      <button type="submit" class="btn primary">Save &amp; connect</button>
-    </div>
-  </form>
+    <!-- Connected: share with other phones -->
+    <section id="connBox" class="sep">
+      <h3 class="sec">Your Sheet</h3>
+      <p class="conn-ok"><span class="dot"></span>This phone is connected.</p>
+      <button type="button" class="btn primary wide" id="inviteBtn">Add another phone</button>
+      <p class="hint">Sends a link. Open it on the other phone and it connects by itself: no typing.</p>
+      <details class="more">
+        <summary>URL and key (for the iPhone Shortcut)</summary>
+        <div class="kv"><span>URL</span><code id="kvUrl"></code><button type="button" class="btn" data-copy="kvUrl">Copy</button></div>
+        <div class="kv"><span>Key</span><code id="kvKey"></code><button type="button" class="btn" data-copy="kvKey">Copy</button></div>
+      </details>
+      <button type="button" class="btn danger wide" id="disconnectBtn">Disconnect this phone</button>
+    </section>
+
+    <!-- Not connected: join with a link, or first-time setup -->
+    <form id="connForm" autocomplete="off">
+      <h3 class="sec">Connect</h3>
+      <p class="hint"><b>Joining?</b> Paste the link another phone sent you.<br><b>First phone?</b> Paste the web app URL from Apps Script, then the key.</p>
+      <label class="f" for="sUrl">Connection link or web app URL</label>
+      <div class="pastebox">
+        <input class="in" id="sUrl" inputmode="url" placeholder="https://…">
+        <button type="button" class="btn" id="pasteLinkBtn">Paste</button>
+      </div>
+      <div id="keyRow">
+        <label class="f" for="sKey">Key</label>
+        <input class="in" id="sKey" placeholder="from the Apps Script log">
+      </div>
+      <div class="status" id="setStatus"></div>
+      <div class="sheet-foot">
+        <button type="button" class="btn" id="demoBtn">Try demo</button>
+        <button type="submit" class="btn primary" id="connectBtn">Connect</button>
+      </div>
+    </form>
+    <div class="pad-bottom"></div>
+  </div>
 </dialog>
 
 <div id="toast" role="status" aria-live="polite"></div>
@@ -412,7 +456,10 @@ function catOf(p) { return CATS[p.category] ? p.category : 'other'; }
 function hasPin(p) { return p.lat != null && p.lng != null && p.lat !== '' && isFinite(p.lat); }
 
 // ---------------------------------------------------------------- state
-const cfg = Object.assign({ url: '', key: '', trip: '', near: '', demo: false }, store.get('cfg', {}));
+const cfg = Object.assign({ url: '', key: '', trip: '', near: '', demo: false, demoTrip: '', demoNear: 'Osaka, Japan' }, store.get('cfg', {}));
+const tripName = () => cfg.demo ? cfg.demoTrip : cfg.trip;
+const tripArea = () => cfg.demo ? cfg.demoNear : cfg.near;
+const connected = () => !!cfg.url && !cfg.demo;
 let items = store.get(cfg.demo ? 'demoItems' : 'items', []);
 let filter = 'all';
 let hideBeen = store.get('hideBeen', false);
@@ -420,6 +467,8 @@ let view = 'list';
 let pos = null;               // {lat, lng}
 let lastSync = store.get('lastSync', null);
 let offline = false;
+let syncProblem = '';          // '', 'offline', 'error', 'auth'
+let warnedAuth = false;
 
 // ---------------------------------------------------------------- API
 let lastWriteAt = 0;
@@ -430,17 +479,18 @@ async function api(action, payload = {}) {
   if (WRITES.includes(action)) { lastWriteAt = Date.now(); scheduleRefresh(); }
   return j;
 }
-async function apiCall(action, payload) {
-  if (cfg.demo) return demoApi(action, payload);
-  if (!cfg.url) throw new Error('Not connected yet: open Settings.');
-  const res = await fetch(cfg.url, {
+async function apiCall(action, payload, creds) {
+  if (!creds && cfg.demo) return demoApi(action, payload);
+  const c = creds || cfg;
+  if (!c.url) throw new Error('Not connected yet: open Settings.');
+  const res = await fetch(c.url, {
     method: 'POST', redirect: 'follow',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },   // avoids a CORS preflight
-    body: JSON.stringify(Object.assign({ k: cfg.key, action }, payload)),
+    body: JSON.stringify(Object.assign({ k: c.key, action }, payload)),
   });
   let j;
   try { j = await res.json(); } catch (e) { throw new Error('The Sheet sent back something odd. Check the URL is the /exec one.'); }
-  if (!j.ok) { const e = new Error(j.error || 'Request failed'); e.gone = !!j.gone; throw e; }
+  if (!j.ok) { const e = new Error(j.error || 'Request failed'); e.gone = !!j.gone; e.auth = !!j.auth; throw e; }
   return j;
 }
 function demoApi(action, p) {
@@ -452,7 +502,7 @@ function demoApi(action, p) {
       const name = q.replace(/https?:\/\/\S+/g, '').split('\n')[0].trim() || 'Demo place';
       const known = DEMO_ITEMS.find(d => d.name.toLowerCase().includes(name.toLowerCase().slice(0, 6)));
       return { ok: true, place: known ? Object.assign({}, known, { why: '' })
-        : { name, address: (cfg.near || 'Osaka') + ' (demo guess)', about: '', lat: 34.67 + Math.random() * .03, lng: 135.49 + Math.random() * .03, category: 'other', link: (q.match(/https?:\/\/\S+/) || [''])[0] } };
+        : { name, address: (tripArea() || 'Osaka') + ' (demo guess)', about: '', lat: 34.67 + Math.random() * .03, lng: 135.49 + Math.random() * .03, category: 'other', link: (q.match(/https?:\/\/\S+/) || [''])[0] } };
     }
     const list = store.get('demoItems', DEMO_ITEMS).slice();
     if (action === 'add') {
@@ -460,7 +510,7 @@ function demoApi(action, p) {
       delete item.q; delete item.near;
       list.push(item); store.set('demoItems', list); return { ok: true, item };
     }
-    if (action === 'settings') return { ok: true, settings: { trip: p.trip, near: p.near } };
+    if (action === 'settings') return { ok: true, settings: { trip: p.trip, near: p.near, set: true } };
     if (action === 'update') {
       const i = list.findIndex(x => x.id === p.id);
       if (i < 0) return Promise.reject(Object.assign(new Error('That place was deleted on another phone.'), { gone: true }));
@@ -489,10 +539,15 @@ async function refresh(quiet) {
     items = j.items || [];
     store.set(cfg.demo ? 'demoItems' : 'items', items);
     if (j.settings && !cfg.demo) adoptSettings(j.settings);
-    lastSync = Date.now(); store.set('lastSync', lastSync); offline = false;
+    lastSync = Date.now(); store.set('lastSync', lastSync); offline = false; syncProblem = '';
   } catch (e) {
+    if (seq !== refreshSeq) return;
     offline = true;
-    if (!quiet) toast(navigator.onLine ? e.message : 'Offline: showing your saved copy');
+    syncProblem = !navigator.onLine ? 'offline' : e.auth ? 'auth' : 'error';
+    if (e.auth && !warnedAuth) {
+      warnedAuth = true;
+      toast('This Sheet\u2019s key has changed. Open a new connection link.', { label: 'Settings', fn: openSettings });
+    } else if (!quiet) toast(navigator.onLine ? e.message : 'Offline: showing your saved copy');
   } finally {
     b.classList.remove('spin'); render();
   }
@@ -512,13 +567,13 @@ function goneElsewhere(id) {
   dropLocal(id); render(); toast('That place was deleted on another phone');
 }
 // Trip name and area are shared through the Sheet, so all phones match.
+// The Sheet is the source of truth. The only time a phone pushes its own values
+// is a Sheet that has never had trip details (made with an older version of the app).
 function adoptSettings(st) {
-  if (!st.trip && !st.near && (cfg.trip || cfg.near)) {
-    api('settings', { trip: cfg.trip, near: cfg.near }).catch(() => {});   // first phone sets them
-    return;
-  }
-  if (st.trip !== cfg.trip || st.near !== cfg.near) {
-    cfg.trip = st.trip; cfg.near = st.near; store.set('cfg', cfg);
+  if (st.set) {
+    if (st.trip !== cfg.trip || st.near !== cfg.near) { cfg.trip = st.trip; cfg.near = st.near; store.set('cfg', cfg); }
+  } else if (cfg.trip || cfg.near) {
+    api('settings', { trip: cfg.trip, near: cfg.near }).catch(() => {});
   }
 }
 
@@ -544,7 +599,7 @@ function directionsUrl(p) {
   } else if (hasPin(p)) {
     u.searchParams.set('destination', `${p.lat},${p.lng}`);
   } else {
-    u.searchParams.set('destination', [p.name, p.address || cfg.near].filter(Boolean).join(', '));
+    u.searchParams.set('destination', [p.name, p.address || tripArea()].filter(Boolean).join(', '));
   }
   return u.href;
 }
@@ -552,7 +607,7 @@ function infoUrl(p) {
   if (p.link && /google\.[^/]+\/maps|maps\.google|maps\.app\.goo\.gl|goo\.gl\/maps/.test(p.link)) return p.link;
   const u = new URL('https://www.google.com/maps/search/');
   u.searchParams.set('api', '1');
-  u.searchParams.set('query', [p.name, p.address || cfg.near].filter(Boolean).join(', '));
+  u.searchParams.set('query', [p.name, p.address || tripArea()].filter(Boolean).join(', '));
   if (p.placeId) u.searchParams.set('query_place_id', p.placeId);
   return u.href;
 }
@@ -610,6 +665,8 @@ function renderSub() {
   let s = `${n} place${n === 1 ? '' : 's'}${been ? ` · ${been} visited` : ''}`;
   let cls = '';
   if (cfg.demo) s += ' · demo';
+  else if (syncProblem === 'auth') { s += ' · key changed, reconnect'; cls = 'off'; }
+  else if (syncProblem === 'error') { s += ' · can\u2019t reach the Sheet'; cls = 'off'; }
   else if (offline) { s += ' · offline copy'; cls = 'off'; }
   else if (lastSync) s += ' · synced';
   $('#sub').className = 'sub ' + cls;
@@ -617,8 +674,8 @@ function renderSub() {
 }
 
 function render() {
-  $('#tripTitle').textContent = cfg.trip || 'Trip Pins';
-  document.title = cfg.trip ? `${cfg.trip} · Trip Pins` : 'Trip Pins';
+  $('#tripTitle').textContent = tripName() || 'Trip Pins';
+  document.title = tripName() ? `${tripName()} · Trip Pins` : 'Trip Pins';
   const setUp = !!(cfg.url || cfg.demo);
   $('#fab').hidden = !setUp; $('#chips').hidden = !setUp; $('#sub').hidden = !setUp;
   renderSub(); renderChips();
@@ -629,7 +686,8 @@ function render() {
       <h2>Save it now. Find it later.</h2>
       <p>Share a place from Google Maps (or paste a link, or type a name). Add why you want to go. Tap <b>Go</b> when you're ready.</p>
       <p>Your places live in a Google Sheet you own, so they sync between phones.</p>
-      <button class="btn primary" data-open-settings>Connect my Google Sheet</button>
+      <button class="btn primary" data-open-settings>Connect</button>
+      <p class="hint" style="margin-top:10px">Someone sent you a link? Just open it. On an iPhone home-screen app, tap Connect and paste the link.</p>
       <button class="btn" data-demo>Look around with sample places</button>
     </div>`;
   } else if (!items.length) {
@@ -791,7 +849,7 @@ function lookUp(q, forEdit) {
   if (!q) { setStatus($('#status'), '', ''); return null; }
   const seq = ++resolveSeq;
   setStatus($('#status'), 'show', '<div class="spinner"></div><div>Looking it up…</div>');
-  resolving = api('resolve', { q, near: cfg.near }).then(j => {
+  resolving = api('resolve', { q, near: tripArea() }).then(j => {
     if (seq !== resolveSeq) return;
     const p = j.place || {};
     draft = { lat: p.lat, lng: p.lng, placeId: p.placeId || '', link: p.link || (forEdit ? draft.link : '') };
@@ -852,7 +910,7 @@ async function savePlace(ev) {
       if (!fields.name) fields.name = q.replace(/https?:\/\/\S+/g, '').trim();
       if (!fields.link) { const m = q.match(/https?:\/\/\S+/); if (m) fields.link = m[0]; }
       const payload = fields.name || fields.lat !== '' ? fields : { q, why: fields.why, category: fields.category };
-      payload.near = cfg.near;
+      payload.near = tripArea();
       const j = await api('add', payload);
       upsert(j.item);
       const added = j.item;
@@ -905,51 +963,161 @@ function resetDel() { const b = $('#delBtn'); b.classList.remove('armed'); b.tex
 
 // ---------------------------------------------------------------- settings
 const setSheet = $('#setSheet');
-function openSettings() {
-  $('#sTrip').value = cfg.trip; $('#sNear').value = cfg.near;
-  $('#sUrl').value = cfg.url; $('#sKey').value = cfg.key;
+let tripAtOpen = { trip: '', near: '' };
+let pendingJoin = null;        // a link for a different Sheet, waiting for "switch"
+
+function openSettings(focusTrip) {
+  const isConn = connected();
+  $('#tripForm').hidden = !(isConn || cfg.demo);
+  $('#connBox').hidden = !isConn;
+  const needsKey = isConn && syncProblem === 'auth';
+  $('#connForm').hidden = isConn && !needsKey;
+  $('#connForm').classList.toggle('sep', isConn);
+  $('#tripHint').textContent = cfg.demo ? 'Demo: these stay on this phone.' : 'Shared with every phone on this Sheet.';
+  $('#sTrip').value = tripName(); $('#sNear').value = tripArea();
+  tripAtOpen = { trip: tripName(), near: tripArea() };
+  $('#sUrl').value = ''; $('#sKey').value = ''; $('#keyRow').hidden = false;
+  $('#kvUrl').textContent = cfg.url; $('#kvKey').textContent = cfg.key;
   $('#demoBtn').textContent = cfg.demo ? 'Leave demo' : 'Try demo';
-  setStatus($('#setStatus'), '', '');
-  setSheet.showModal();
+  resetDisconnect();
+  ['#setStatus', '#tripStatus'].forEach(id => setStatus($(id), '', ''));
+  if (pendingJoin) {
+    setStatus($('#joinStatus'), 'bad', `<div><b>That link is for a different Sheet.</b><small>Switching shows that Sheet's places on this phone instead. Nothing is deleted from either Sheet.</small><br><button type="button" class="btn primary" data-switch>Switch to that Sheet</button></div>`);
+  } else if (needsKey) {
+    setStatus($('#joinStatus'), 'bad', '<div><b>The key for this Sheet has changed.</b><small>Paste a fresh link from a phone that still works, or the web app URL and the new key.</small></div>');
+  } else setStatus($('#joinStatus'), '', '');
+  if (!setSheet.open) setSheet.showModal();
+  if (focusTrip) setTimeout(() => $('#sTrip').focus(), 60);
 }
-async function saveSettings(ev) {
+
+// ----- join links: https://…/#join=<url and key>
+const b64e = s => btoa(unescape(encodeURIComponent(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const b64d = s => decodeURIComponent(escape(atob(s.replace(/-/g, '+').replace(/_/g, '/'))));
+function joinLink() {
+  return location.origin + location.pathname + '#join=' + b64e(JSON.stringify({ u: cfg.url, k: cfg.key }));
+}
+function parseJoin(text) {
+  const m = String(text || '').match(/[#&?]join=([A-Za-z0-9_-]+)/);
+  if (!m) return null;
+  try { const o = JSON.parse(b64d(m[1])); return o.u ? { url: o.u, key: o.k || '' } : null; } catch (e) { return null; }
+}
+const validUrl = u => /^https:\/\/script\.google(usercontent)?\.com\/.+\/exec$/.test(u);
+
+// One place where a phone connects to a Sheet. Nothing about this phone changes
+// unless the Sheet answers with the right key.
+async function connectTo(url, key) {
+  const j = await apiCall('list', {}, { url, key });
+  ++refreshSeq;                                          // ignore any refresh from before the switch
+  const newSheet = url !== cfg.url;
+  cfg.url = url; cfg.key = key; cfg.demo = false;
+  if (newSheet) { cfg.trip = ''; cfg.near = ''; }        // never carry one Sheet's trip into another
+  const st = j.settings || {};
+  if (st.set) { cfg.trip = st.trip; cfg.near = st.near; }
+  store.set('cfg', cfg);
+  items = j.items || []; store.set('items', items);
+  lastSync = Date.now(); offline = false; syncProblem = ''; warnedAuth = false;
+  pendingJoin = null;
+  render();
+  return { named: !!st.set };
+}
+
+async function afterConnect(res, via) {
+  if (res.named) {
+    if (setSheet.open) setSheet.close();
+    toast(`Connected${cfg.trip ? ': ' + cfg.trip : ''}`);
+  } else {
+    // First phone on a brand-new Sheet: ask for the trip details, once.
+    openSettings(true);
+    setStatus($('#tripStatus'), 'ok', '<div>✓</div><div><b>Connected.</b><small>Now name this trip. Every phone that joins picks it up.</small></div>');
+  }
+}
+
+async function submitConnect(ev) {
   ev.preventDefault();
-  const url = $('#sUrl').value.trim(), key = $('#sKey').value.trim();
-  cfg.trip = $('#sTrip').value.trim(); cfg.near = $('#sNear').value.trim();
-  if (url && !/^https:\/\/script\.google(usercontent)?\.com\/.+\/exec/.test(url)) {
-    setStatus($('#setStatus'), 'bad', '<div>That doesn’t look like an Apps Script web app URL. It should start with https://script.google.com/macros/s/ and end in /exec.</div>');
+  const raw = $('#sUrl').value.trim();
+  const join = parseJoin(raw);
+  const url = join ? join.url : raw;
+  const key = join ? join.key : $('#sKey').value.trim();
+  if (!validUrl(url)) {
+    setStatus($('#setStatus'), 'bad', '<div>Paste either the link another phone sent you, or the Apps Script web app URL (it starts with https://script.google.com/macros/s/ and ends in /exec).</div>');
     return;
   }
-  const changed = url !== cfg.url || key !== cfg.key;
-  let joined = false;
-  if (url && changed) {
-    setStatus($('#setStatus'), 'show', '<div class="spinner"></div><div>Connecting…</div>');
-    const was = Object.assign({}, cfg);
-    Object.assign(cfg, { url, key, demo: false });
-    try {
-      const j = await api('list');
-      items = j.items || []; store.set('items', items); offline = false; lastSync = Date.now();
-      // Joining a Sheet another phone already set up: take its trip name and area.
-      const st = j.settings || {};
-      if (!cfg.trip && !cfg.near && (st.trip || st.near)) { cfg.trip = st.trip; cfg.near = st.near; joined = true; }
-    } catch (e) {
-      Object.assign(cfg, was);
-      setStatus($('#setStatus'), 'bad', `<div><b>Couldn’t connect</b><small>${esc(e.message)}</small></div>`);
-      return;
-    }
-  }
-  store.set('cfg', cfg);
-  if (cfg.url && !cfg.demo && !joined) api('settings', { trip: cfg.trip, near: cfg.near }).catch(() => {});
-  setSheet.close(); render();
-  if (url && changed) toast('Connected to your Sheet');
+  if (!key) { setStatus($('#setStatus'), 'bad', '<div>Add the key too. It’s in the Apps Script execution log.</div>'); $('#sKey').focus(); return; }
+  setStatus($('#setStatus'), 'show', '<div class="spinner"></div><div>Connecting…</div>');
+  $('#connectBtn').disabled = true;
+  try { await afterConnect(await connectTo(url, key)); }
+  catch (e) {
+    setStatus($('#setStatus'), 'bad', `<div><b>Couldn’t connect</b><small>${esc(e.auth ? 'The key doesn’t match this Sheet.' : e.message)}</small></div>`);
+  } finally { $('#connectBtn').disabled = false; }
 }
+
+// Trip details: send only what changed, so two phones editing different
+// fields don't undo each other.
+async function submitTrip(ev) {
+  ev.preventDefault();
+  const now = { trip: $('#sTrip').value.trim(), near: $('#sNear').value.trim() };
+  const changed = {};
+  for (const k of ['trip', 'near']) if (now[k] !== tripAtOpen[k]) changed[k] = now[k];
+  if (!Object.keys(changed).length) { setSheet.close(); return; }
+  if (cfg.demo) {
+    if ('trip' in changed) cfg.demoTrip = changed.trip;
+    if ('near' in changed) cfg.demoNear = changed.near;
+    store.set('cfg', cfg); setSheet.close(); render(); return;
+  }
+  $('#tripSave').disabled = true;
+  try {
+    const j = await api('settings', changed);
+    cfg.trip = j.settings.trip; cfg.near = j.settings.near; store.set('cfg', cfg);
+    setSheet.close(); render(); toast('Trip details updated on every phone');
+  } catch (e) {
+    setStatus($('#tripStatus'), 'bad', `<div>${esc(e.message)}</div>`);
+  } finally { $('#tripSave').disabled = false; }
+}
+
+async function invite() {
+  const link = joinLink();
+  const text = `Join ${cfg.trip || 'our trip'} on Trip Pins. Open this on your phone:`;
+  try {
+    if (navigator.share) { await navigator.share({ title: 'Trip Pins', text, url: link }); return; }
+  } catch (e) { if (e.name === 'AbortError') return; }
+  try { await navigator.clipboard.writeText(link); toast('Link copied. Send it to the other phone.'); }
+  catch (e) { prompt('Copy this link and send it to the other phone:', link); }
+}
+
+let discTimer;
+function resetDisconnect() { const b = $('#disconnectBtn'); b.classList.remove('armed'); b.textContent = 'Disconnect this phone'; }
+function disconnect() {
+  const b = $('#disconnectBtn');
+  if (!b.classList.contains('armed')) {
+    b.classList.add('armed'); b.textContent = 'Tap again: this phone forgets the Sheet';
+    clearTimeout(discTimer); discTimer = setTimeout(resetDisconnect, 4000); return;
+  }
+  Object.assign(cfg, { url: '', key: '', trip: '', near: '' });
+  store.set('cfg', cfg); items = []; store.set('items', []);
+  syncProblem = ''; offline = false;
+  setSheet.close(); render(); toast('Disconnected. Your places are still in the Sheet.');
+}
+
 function toggleDemo() {
   cfg.demo = !cfg.demo; store.set('cfg', cfg);
   items = cfg.demo ? store.get('demoItems', DEMO_ITEMS) : store.get('items', []);
-  if (cfg.demo && !cfg.near) cfg.near = 'Osaka, Japan';
-  setSheet.open && setSheet.close();
+  if (setSheet.open) setSheet.close();
   render(); refresh(true);
   toast(cfg.demo ? 'Demo mode: changes stay on this phone' : 'Demo off');
+}
+
+// A join link was opened (or pasted into the address bar).
+async function handleJoin(j) {
+  if (connected() && j.url === cfg.url) {
+    if (j.key !== cfg.key) {                               // the key was changed: take the new one
+      try { await afterConnect(await connectTo(j.url, j.key)); } catch (e) { toast('That link didn’t work: ' + e.message); }
+    } else toast('This phone is already connected to that Sheet');
+    return;
+  }
+  if (connected()) { pendingJoin = j; openSettings(); return; }   // different Sheet: ask first
+  toast('Connecting…');
+  try { await afterConnect(await connectTo(j.url, j.key)); }
+  catch (e) { openSettings(); setStatus($('#setStatus'), 'bad', `<div><b>That link didn’t work</b><small>${esc(e.auth ? 'The key has changed since it was sent. Ask for a fresh link.' : e.message)}</small></div>`); }
 }
 
 // ---------------------------------------------------------------- events
@@ -959,6 +1127,16 @@ document.addEventListener('click', e => {
   if (t.matches('[data-close]')) { t.closest('dialog').close(); return; }
   if (t.matches('[data-open-settings]')) { openSettings(); return; }
   if (t.matches('[data-demo]')) { toggleDemo(); return; }
+  if (t.matches('[data-switch]')) {
+    const j = pendingJoin; pendingJoin = null; setStatus($('#joinStatus'), '', '');
+    connectTo(j.url, j.key).then(afterConnect).catch(err => toast('That link didn\u2019t work: ' + err.message));
+    return;
+  }
+  if (t.dataset.copy) {
+    const v = $('#' + t.dataset.copy).textContent;
+    navigator.clipboard.writeText(v).then(() => toast('Copied')).catch(() => prompt('Copy:', v));
+    return;
+  }
   if (t.dataset.f) { filter = t.dataset.f; hidePeek(); render(); if (map) fitAll(); return; }
   if (t.hasAttribute('data-hide')) { hideBeen = !hideBeen; store.set('hideBeen', hideBeen); render(); return; }
   if (t.hasAttribute('data-near')) { startLocating(true); return; }
@@ -985,7 +1163,16 @@ $('#syncBtn').onclick = () => refresh(false);
 $('#fitBtn').onclick = () => fitAll();
 $('#locBtn').onclick = () => { if (pos && map) map.setView([pos.lat, pos.lng], 16); else startLocating(true); };
 $('#placeForm').addEventListener('submit', savePlace);
-$('#setForm').addEventListener('submit', saveSettings);
+$('#connForm').addEventListener('submit', submitConnect);
+$('#tripForm').addEventListener('submit', submitTrip);
+$('#inviteBtn').onclick = invite;
+$('#disconnectBtn').onclick = disconnect;
+$('#sUrl').addEventListener('input', () => { $('#keyRow').hidden = !!parseJoin($('#sUrl').value); });
+$('#pasteLinkBtn').onclick = async () => {
+  try { const t = await navigator.clipboard.readText(); if (t) { $('#sUrl').value = t.trim(); $('#keyRow').hidden = !!parseJoin(t); return; } } catch (e) {}
+  $('#sUrl').focus(); toast('Long-press the box and choose Paste');
+};
+setSheet.addEventListener('close', () => { pendingJoin = null; });
 $('#demoBtn').onclick = toggleDemo;
 $('#delBtn').onclick = deletePlace;
 $('#relocBtn').onclick = () => {
@@ -1020,13 +1207,23 @@ try {
 } catch (e) {}
 refresh(true);
 
+// Opened from a join link: connect, then scrub the key out of the address bar and history.
+function checkJoinInUrl() {
+  const j = parseJoin(location.hash);
+  if (!j) return;
+  history.replaceState(null, '', location.pathname + location.search);
+  handleJoin(j);
+}
+checkJoinInUrl();
+window.addEventListener('hashchange', checkJoinInUrl);   // link opened while the app was already open
+
 // Something shared to the app (Android share sheet), or ?add= in the URL.
 const sp = new URLSearchParams(location.search);
 const shared = [sp.get('title'), sp.get('text'), sp.get('url'), sp.get('add')]
   .filter(Boolean).filter((v, i, a) => a.indexOf(v) === i && !a.some((w, j) => j !== i && w.includes(v) && w !== v)).join('\n');
 if (shared) {
   history.replaceState(null, '', location.pathname);
-  if (!cfg.url && !cfg.demo) { openSettings(); toast('Connect your Sheet first, then share again'); }
+  if (!cfg.url && !cfg.demo) { openSettings(); toast('Connect first, then share again'); }
   else openAdd(shared);
 }
 

@@ -31,18 +31,25 @@ The URL and key together work like a password. Anyone with both can read and add
 3. **Settings → Pages.** Under *Build and deployment*, pick **Deploy from a branch**, branch `main`, folder `/ (root)`, and save.
 4. After a minute or so the site is live at `https://YOUR-NAME.github.io/trippins/`.
 
-## 3. Each phone (2 minutes)
+## 3. Connecting phones
 
-1. Open the site on the phone.
-2. Tap the **gear**. Fill in:
-   - **Trip name**, e.g. *Osaka, October*
-   - **Where you're travelling**, e.g. *Osaka, Japan* (this helps typed names find the right place)
-   - The **web app URL** and **key** from part 1
-3. Press **Save & connect**. The top line should read *0 places · synced*.
-4. Put it on your home screen:
-   - **Android (Chrome):** menu ⋮ → **Add to Home screen** → **Install**.
-   - **iPhone (Safari):** Share button → **Add to Home Screen**.
-   - On iPhone the home-screen app keeps its own settings, separate from Safari's. Open it from the home screen once and fill in the gear settings again.
+### The first phone (2 minutes, once per Sheet)
+
+1. Open the site on the phone and tap **Connect**.
+2. Paste the **web app URL** and the **key** from part 1, then tap **Connect**.
+3. It asks you to name the trip, once: a **trip name** (e.g. *Osaka, October*) and **where you're travelling** (e.g. *Osaka, Japan*, which helps typed names find the right place). Tap **Save trip details**.
+
+### Every other phone (30 seconds)
+
+1. On a phone that's already connected, open **Settings → Add another phone**. It opens your phone's share menu; send the link by Messages, WhatsApp, AirDrop or email.
+2. Open the link on the new phone. It connects and picks up the trip name and area from the Sheet. There's nothing to type.
+
+Treat that link like a house key: anyone who has it can see and change your list.
+
+### Put it on the home screen
+
+- **Android (Chrome):** menu ⋮ → **Add to Home screen** → **Install**. It keeps the connection.
+- **iPhone (Safari):** Share button → **Add to Home Screen**. The home-screen app on an iPhone starts with its own empty settings, separate from Safari's. Open it, tap **Connect**, and paste the same link (tap **Paste**; the key box disappears because the link carries it).
 
 ### Adding from Android: Google Maps → Share → Trip Pins
 
@@ -60,13 +67,13 @@ In the **Shortcuts** app, tap **+** and build this:
    - The first line now reads *Receive **Any** input from Share Sheet*. Tap *If there's no input* and choose **Ask For → Text**, so it also works from the home screen.
 2. Add the action **Ask for Input**. Set the prompt to `Why go? (optional)`.
 3. Add **Get Contents of URL**.
-   - URL: your **web app URL** from part 1
+   - URL: your **web app URL** (on a connected phone: **Settings → URL and key**, then Copy)
    - Tap **Show More**. Method: **POST**. Request Body: **JSON**.
    - Add four **Text** fields:
 
      | Key | Value |
      |---|---|
-     | `k` | your key |
+     | `k` | your key (same place, Copy) |
      | `action` | `add` |
      | `q` | *Shortcut Input* (tap the variable bar above the keyboard) |
      | `why` | *Provided Input* |
@@ -84,14 +91,18 @@ If the notification says *Saved:* with no name, the key or URL is probably wrong
 
 Point as many phones at the same Sheet as you like (yours, a travel partner's, an iPad). They all share one list.
 
-- **Trip name and area** are stored in the Sheet. Set them on the first phone; a phone you connect later picks them up by itself (leave those two boxes blank when connecting it). Change them on any phone and the rest follow.
+- **Trip name and area** live in the Sheet. The first phone sets them; phones that join pick them up. Change them on any phone (**Settings → This trip**) and the others follow. Only the box you changed is sent, so two people editing different boxes don't undo each other, and clearing a box sticks.
+- **Switching to a different Sheet** (say, a new one for Tokyo): open that Sheet's link. The app asks before switching and never copies one trip's name into another. Nothing is deleted from either Sheet.
+- **Leaving:** **Settings → Disconnect this phone** (tap twice). The phone forgets the Sheet; the places stay in it.
 - **New places** show up on the other phones when the app is next opened, when you tap refresh, or within about 90 seconds while it's open.
-- **The same place saved twice** (say you both share Kuromon Market) stays as one pin. The second person's note is added under the first.
+- **The same place saved twice** (say you both share Kuromon Market) stays as one pin, and the second person's note is added under the first. "Same" means the same Google place, or the same name within 100 m. Two FamilyMarts in different streets stay separate.
 - **Edits** only change what you actually touched. If you fix the type while your partner adds a note, both changes stick.
 - **Visited ticks are shared.** If one of you ticks a place, it's ticked for everyone.
 - **Deleted on one phone, still showing on another?** Tapping it tells you it's gone and removes it. Nothing breaks.
 
 Two phones can save at exactly the same moment; the Sheet takes them one at a time.
+
+**If you ever change the key** (run `resetKey` in Apps Script), every phone shows *key changed, reconnect*. Send a fresh link from any phone that you've reconnected (or from the first phone after pasting the new key), and update the key in the iPhone Shortcut.
 
 ## Using it
 
