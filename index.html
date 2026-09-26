@@ -1,0 +1,937 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Trip Pins</title>
+<meta name="description" content="Save places you find, remember why, and get there with Google Maps.">
+<meta name="theme-color" content="#F6F1E7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#16130F" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Trip Pins">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+:root {
+  --bg: #F6F1E7; --card: #FFFDF8; --ink: #1F1B16; --muted: #6B6257; --line: #E6DDCC;
+  --accent: #D9480F; --accent-ink: #fff; --soft: #EFE7D8; --ok: #2F7D4F; --warn: #A15C00;
+  --eat: #D9480F; --drink: #7B3FA0; --see: #1F6F8B; --shop: #B07D00; --outdoors: #2F7D4F; --other: #6B6257;
+  --shadow: 0 1px 2px rgba(60,40,10,.06), 0 4px 14px rgba(60,40,10,.06);
+  --display: "Fraunces", Georgia, "Times New Roman", serif;
+  --body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #16130F; --card: #211D18; --ink: #F3EDE3; --muted: #A89F92; --line: #332D26;
+    --accent: #F0692E; --soft: #2A251F; --ok: #5DBB84; --warn: #E0A04A;
+    --eat: #F0692E; --drink: #B37ADB; --see: #4FA8C7; --shop: #D9A92E; --outdoors: #5DBB84; --other: #A89F92;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 14px rgba(0,0,0,.25);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #16130F; --card: #211D18; --ink: #F3EDE3; --muted: #A89F92; --line: #332D26;
+  --accent: #F0692E; --soft: #2A251F; --ok: #5DBB84; --warn: #E0A04A;
+  --eat: #F0692E; --drink: #B37ADB; --see: #4FA8C7; --shop: #D9A92E; --outdoors: #5DBB84; --other: #A89F92;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--bg); color: var(--ink); font: 16px/1.4 var(--body);
+  -webkit-tap-highlight-color: transparent; overscroll-behavior-y: contain;
+}
+button, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+a { color: inherit; }
+
+/* ---------- top bar ---------- */
+.top {
+  position: sticky; top: 0; z-index: 500; background: var(--bg);
+  padding: calc(env(safe-area-inset-top) + 10px) 16px 0;
+}
+.titlebar { display: flex; align-items: center; gap: 10px; }
+.titlebar h1 {
+  font: 700 26px/1.1 var(--display); margin: 0; flex: 1; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -.01em;
+}
+.sub { font-size: 13px; color: var(--muted); margin: 2px 0 10px; min-height: 18px; }
+.sub .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--ok); margin-right: 5px; vertical-align: 1px; }
+.sub.off .dot { background: var(--warn); }
+.icon-btn {
+  width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--line);
+  background: var(--card); display: grid; place-items: center; flex: none;
+}
+.icon-btn svg { width: 20px; height: 20px; }
+.icon-btn.spin svg { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.seg { display: flex; background: var(--soft); border-radius: 12px; padding: 3px; gap: 3px; }
+.seg button {
+  flex: 1; border: 0; background: transparent; padding: 8px 0; border-radius: 9px;
+  font-weight: 600; font-size: 15px; color: var(--muted);
+}
+.seg button[aria-selected="true"] { background: var(--card); color: var(--ink); box-shadow: var(--shadow); }
+
+.chips {
+  display: flex; gap: 6px; overflow-x: auto; padding: 10px 16px 10px; margin: 0 -16px;
+  scrollbar-width: none;
+}
+.chips::-webkit-scrollbar { display: none; }
+.chip {
+  flex: none; border: 1px solid var(--line); background: var(--card); border-radius: 999px;
+  padding: 6px 12px; font-size: 14px; white-space: nowrap;
+}
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.chip .n { color: var(--muted); margin-left: 3px; font-size: 12px; }
+.chip[aria-pressed="true"] .n { color: inherit; opacity: .7; }
+
+/* ---------- list ---------- */
+main { padding: 4px 16px calc(env(safe-area-inset-bottom) + 96px); }
+#mapView { display: none; }
+body.show-map main { padding: 0; }
+body.show-map #listView { display: none; }
+body.show-map #mapView { display: block; }
+body.show-map .chips { padding-bottom: 8px; }
+
+.card {
+  background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+  padding: 14px 14px 10px; margin-bottom: 10px; box-shadow: var(--shadow);
+  border-left: 4px solid var(--c, var(--other));
+}
+.card.been { opacity: .6; }
+.card.been h3 { text-decoration: line-through; text-decoration-thickness: 1.5px; }
+.card-head { display: flex; gap: 8px; align-items: baseline; }
+.card h3 { font: 600 19px/1.2 var(--display); margin: 0; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.dist { font-size: 13px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.cat-tag { font-size: 12px; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; color: var(--c); margin: 0 0 4px; }
+.about { margin: 4px 0 0; font-size: 14px; color: var(--muted); }
+.why {
+  margin: 8px 0 0; font-size: 15px; padding: 8px 10px; background: var(--soft); border-radius: 10px;
+  white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.addr { margin: 6px 0 0; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nopin { color: var(--warn); }
+.actions { display: flex; gap: 6px; margin-top: 10px; }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 40px; padding: 0 12px; border-radius: 11px; border: 1px solid var(--line);
+  background: var(--card); text-decoration: none; font-size: 14px; font-weight: 600; white-space: nowrap;
+}
+.btn svg { width: 18px; height: 18px; flex: none; }
+.btn.go { flex: 1; background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-size: 15px; }
+.btn.sq { width: 44px; padding: 0; }
+.btn.on { color: var(--ok); border-color: var(--ok); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.ghost { background: transparent; }
+.btn.danger { color: #C0392B; }
+.btn:disabled { opacity: .5; }
+
+.cat-eat { --c: var(--eat); } .cat-drink { --c: var(--drink); } .cat-see { --c: var(--see); }
+.cat-shop { --c: var(--shop); } .cat-outdoors { --c: var(--outdoors); } .cat-other { --c: var(--other); }
+
+.empty { text-align: center; padding: 32px 12px; color: var(--muted); }
+.empty h2 { font: 600 22px/1.2 var(--display); color: var(--ink); margin: 0 0 8px; }
+.empty p { margin: 0 auto 10px; max-width: 34ch; }
+.welcome { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 20px; box-shadow: var(--shadow); }
+.welcome h2 { font: 700 24px/1.15 var(--display); margin: 0 0 8px; }
+.welcome p { color: var(--muted); margin: 0 0 14px; }
+.welcome .btn { width: 100%; margin-top: 8px; height: 46px; }
+.hint { font-size: 13px; color: var(--muted); }
+
+/* ---------- map ---------- */
+#map { height: calc(100dvh - var(--topH, 170px)); width: 100%; background: var(--soft); }
+.map-ctrls { position: absolute; right: 12px; top: 12px; z-index: 450; display: flex; flex-direction: column; gap: 8px; }
+.map-ctrls .icon-btn { box-shadow: var(--shadow); }
+#mapView { position: relative; }
+.pin {
+  width: 34px; height: 34px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg);
+  background: var(--c); border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.35);
+  display: grid; place-items: center;
+}
+.pin span { transform: rotate(45deg); font-size: 16px; line-height: 1; }
+.pin.been { filter: grayscale(1); opacity: .6; }
+.pin.sel { outline: 3px solid var(--ink); outline-offset: 1px; }
+.me { width: 18px; height: 18px; border-radius: 50%; background: #1A73E8; border: 3px solid #fff; box-shadow: 0 0 0 6px rgba(26,115,232,.2), 0 1px 4px rgba(0,0,0,.4); }
+#peek {
+  position: absolute; left: 10px; right: 10px; bottom: calc(env(safe-area-inset-bottom) + 12px); z-index: 460;
+  display: none;
+}
+#peek.open { display: block; }
+#peek .card { margin: 0; box-shadow: 0 8px 30px rgba(0,0,0,.25); }
+body.show-map #fab { bottom: calc(env(safe-area-inset-bottom) + 16px); }
+body.show-map.peeking #fab { display: none; }
+.leaflet-container { font: inherit; }
+.leaflet-control-attribution { font-size: 10px; }
+
+/* ---------- add button ---------- */
+#fab {
+  position: fixed; right: 16px; bottom: calc(env(safe-area-inset-bottom) + 20px); z-index: 600;
+  height: 56px; padding: 0 22px 0 18px; border-radius: 18px; border: 0;
+  background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: 17px;
+  display: flex; align-items: center; gap: 8px; box-shadow: 0 6px 20px rgba(217,72,15,.35);
+}
+#fab svg { width: 22px; height: 22px; }
+
+/* ---------- sheets ---------- */
+dialog.sheet {
+  border: 0; padding: 0; margin: auto 0 0; width: 100%; max-width: 100%;
+  max-height: 94dvh; border-radius: 20px 20px 0 0; background: var(--card); color: var(--ink);
+  box-shadow: 0 -10px 40px rgba(0,0,0,.25);
+}
+dialog.sheet::backdrop { background: rgba(20,15,10,.45); }
+@media (min-width: 640px) {
+  dialog.sheet { margin: auto; max-width: 520px; border-radius: 20px; }
+}
+.sheet-in { padding: 8px 16px 0; }
+.grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line); margin: 0 auto 10px; }
+.sheet-head { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.sheet-head h2 { font: 700 22px/1.2 var(--display); margin: 0; flex: 1; }
+label.f { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin: 14px 0 6px; }
+.in {
+  width: 100%; border: 1px solid var(--line); background: var(--bg); border-radius: 12px;
+  padding: 11px 12px; font-size: 16px; outline: none;
+}
+.in:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent); }
+textarea.in { resize: vertical; min-height: 76px; }
+#q { min-height: 52px; font-size: 15px; }
+.pastebox { display: flex; gap: 8px; }
+.pastebox .in { flex: 1; }
+.status {
+  margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: var(--soft); font-size: 14px;
+  display: none; gap: 8px; align-items: flex-start;
+}
+.status.show { display: flex; }
+.status.ok { background: color-mix(in srgb, var(--ok) 14%, var(--card)); }
+.status.bad { background: color-mix(in srgb, var(--warn) 16%, var(--card)); }
+.status b { display: block; }
+.status small { color: var(--muted); }
+.spinner { width: 16px; height: 16px; border: 2px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; flex: none; margin-top: 2px; }
+.catpick { display: flex; flex-wrap: wrap; gap: 6px; }
+.catpick button { border: 1px solid var(--line); background: var(--bg); border-radius: 999px; padding: 7px 12px; font-size: 14px; }
+.catpick button[aria-pressed="true"] { background: var(--c); border-color: var(--c); color: #fff; }
+.row { display: flex; gap: 8px; }
+.row > * { flex: 1; }
+.sheet-foot {
+  display: flex; gap: 8px; margin: 18px -16px 0; padding: 12px 16px calc(env(safe-area-inset-bottom) + 4px);
+  position: sticky; bottom: 0; background: var(--card); border-top: 1px solid var(--line);
+}
+.sheet-foot .btn { height: 48px; font-size: 16px; }
+.sheet-foot .primary { flex: 1; }
+details.more { margin-top: 14px; }
+details.more summary { font-size: 14px; color: var(--muted); cursor: pointer; }
+.check { display: flex; align-items: center; gap: 10px; margin-top: 14px; font-size: 15px; }
+.check input { width: 20px; height: 20px; accent-color: var(--accent); }
+
+#toast {
+  position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 90px); transform: translate(-50%, 20px);
+  background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-size: 15px;
+  opacity: 0; pointer-events: none; transition: .25s; z-index: 2000; max-width: calc(100% - 32px);
+}
+#toast.show { opacity: 1; transform: translate(-50%, 0); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+</style>
+</head>
+<body>
+
+<header class="top" id="top">
+  <div class="titlebar">
+    <h1 id="tripTitle">Trip Pins</h1>
+    <button class="icon-btn" id="syncBtn" aria-label="Refresh">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+    </button>
+    <button class="icon-btn" id="settingsBtn" aria-label="Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+  </div>
+  <div class="sub" id="sub"></div>
+  <div class="seg" role="tablist">
+    <button role="tab" id="tabList" aria-selected="true">List</button>
+    <button role="tab" id="tabMap" aria-selected="false">Map</button>
+  </div>
+  <div class="chips" id="chips"></div>
+</header>
+
+<main>
+  <section id="listView"><div id="list"></div></section>
+  <section id="mapView">
+    <div id="map"></div>
+    <div class="map-ctrls">
+      <button class="icon-btn" id="locBtn" aria-label="Show where I am">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+      </button>
+      <button class="icon-btn" id="fitBtn" aria-label="Show all places">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+      </button>
+    </div>
+    <div id="peek"></div>
+  </section>
+</main>
+
+<button id="fab" aria-label="Add a place">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add
+</button>
+
+<!-- Add / edit sheet -->
+<dialog class="sheet" id="placeSheet">
+  <form class="sheet-in" id="placeForm" method="dialog" autocomplete="off">
+    <div class="grab"></div>
+    <div class="sheet-head">
+      <h2 id="placeTitle">Add a place</h2>
+      <button type="button" class="btn ghost" data-close>Cancel</button>
+    </div>
+
+    <div id="findBox">
+      <label class="f" for="q">Google Maps link, or a place name</label>
+      <div class="pastebox">
+        <textarea class="in" id="q" rows="2" enterkeyhint="done" placeholder="maps.app.goo.gl/… or “Kuromon Market”"></textarea>
+        <button type="button" class="btn" id="pasteBtn">Paste</button>
+      </div>
+    </div>
+    <div class="status" id="status" role="status"></div>
+
+    <label class="f" for="fWhy">Why go?</label>
+    <textarea class="in" id="fWhy" rows="2" placeholder="Best grilled scallops. Go before 11."></textarea>
+
+    <label class="f">Type</label>
+    <div class="catpick" id="catPick"></div>
+
+    <label class="f" for="fName">Name</label>
+    <input class="in" id="fName" placeholder="Place name">
+
+    <label class="f" for="fAbout">What it is</label>
+    <input class="in" id="fAbout" placeholder="Seafood market, standing sushi bar…">
+
+    <label class="f" for="fAddr">Where</label>
+    <div class="pastebox">
+      <input class="in" id="fAddr" placeholder="Address or area">
+      <button type="button" class="btn" id="relocBtn" hidden>Find</button>
+    </div>
+
+    <label class="check" id="beenRow" hidden><input type="checkbox" id="fBeen"> Been there</label>
+
+    <div class="sheet-foot">
+      <button type="button" class="btn danger" id="delBtn" hidden>Delete</button>
+      <button type="submit" class="btn primary" id="saveBtn">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Settings sheet -->
+<dialog class="sheet" id="setSheet">
+  <form class="sheet-in" id="setForm" method="dialog" autocomplete="off">
+    <div class="grab"></div>
+    <div class="sheet-head">
+      <h2>Settings</h2>
+      <button type="button" class="btn ghost" data-close>Close</button>
+    </div>
+    <label class="f" for="sTrip">Trip name</label>
+    <input class="in" id="sTrip" placeholder="Osaka, October">
+    <label class="f" for="sNear">Where you're travelling</label>
+    <input class="in" id="sNear" placeholder="Osaka, Japan">
+    <p class="hint">Helps typed names like “Kuromon Market” find the right spot.</p>
+
+    <label class="f" for="sUrl">Google Sheet web app URL</label>
+    <input class="in" id="sUrl" inputmode="url" placeholder="https://script.google.com/macros/s/…/exec">
+    <label class="f" for="sKey">Key</label>
+    <input class="in" id="sKey" placeholder="from the setup log">
+    <div class="status" id="setStatus"></div>
+
+    <div class="sheet-foot">
+      <button type="button" class="btn" id="demoBtn">Try demo</button>
+      <button type="submit" class="btn primary">Save &amp; connect</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" defer></script>
+<script>
+(() => {
+'use strict';
+
+// ---------------------------------------------------------------- constants
+const CATS = {
+  eat:      { label: 'Eat',      emoji: '🍜' },
+  drink:    { label: 'Drink',    emoji: '🍻' },
+  see:      { label: 'See',      emoji: '🏛️' },
+  shop:     { label: 'Shop',     emoji: '🛍️' },
+  outdoors: { label: 'Outdoors', emoji: '🌳' },
+  other:    { label: 'Other',    emoji: '📍' },
+};
+const ICON = {
+  go: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>',
+  info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6M10 14L21 3"/></svg>',
+  map: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>',
+  edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
+};
+const DEMO_ITEMS = [
+  { id: 'd1', name: 'Kuromon Ichiba Market', category: 'eat', about: 'Covered food market, 170-odd stalls', why: 'Grilled scallops and tuna skewers. Go before 11, it gets packed.', address: 'Nipponbashi, Chuo Ward, Osaka', lat: 34.6654, lng: 135.5066 },
+  { id: 'd2', name: 'Osaka Castle', category: 'see', about: 'Castle and park, museum inside', why: 'Top-floor view over the city. Walk the moat at sunset.', address: '1-1 Osakajo, Chuo Ward, Osaka', lat: 34.6873, lng: 135.5262 },
+  { id: 'd3', name: 'Dotonbori', category: 'see', about: 'Canal-side neon street', why: 'Glico sign after dark; takoyaki from a street stall.', address: 'Dotonbori, Chuo Ward, Osaka', lat: 34.6687, lng: 135.5013 },
+  { id: 'd4', name: 'Shinsekai', category: 'eat', about: 'Retro district under Tsutenkaku tower', why: 'Kushikatsu. No double-dipping the sauce!', address: 'Ebisuhigashi, Naniwa Ward, Osaka', lat: 34.6525, lng: 135.5063 },
+  { id: 'd5', name: 'Umeda Sky Building', category: 'see', about: 'Open-air observatory, 173 m up', why: 'Floating Garden at dusk.', address: '1-1-88 Oyodonaka, Kita Ward, Osaka', lat: 34.7053, lng: 135.4903 },
+  { id: 'd6', name: 'Nakazakicho', category: 'drink', about: 'Old-house cafés and vintage shops', why: 'Slow coffee morning, away from the crowds.', address: 'Nakazaki, Kita Ward, Osaka', lat: 34.7090, lng: 135.5060 },
+  { id: 'd7', name: 'Minoo Falls', category: 'outdoors', about: '33 m waterfall, 3 km forest walk', why: 'Half-day escape. Try the maple leaf tempura.', address: 'Minoo Park, Minoh', lat: 34.8530, lng: 135.4720, been: true },
+];
+
+// ---------------------------------------------------------------- tiny helpers
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('tp.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('tp.' + k, JSON.stringify(v)); } catch (e) {} },
+};
+let toastTimer;
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+function catOf(p) { return CATS[p.category] ? p.category : 'other'; }
+function hasPin(p) { return p.lat != null && p.lng != null && p.lat !== '' && isFinite(p.lat); }
+
+// ---------------------------------------------------------------- state
+const cfg = Object.assign({ url: '', key: '', trip: '', near: '', demo: false }, store.get('cfg', {}));
+let items = store.get(cfg.demo ? 'demoItems' : 'items', []);
+let filter = 'all';
+let hideBeen = store.get('hideBeen', false);
+let view = 'list';
+let pos = null;               // {lat, lng}
+let lastSync = store.get('lastSync', null);
+let offline = false;
+
+// ---------------------------------------------------------------- API
+async function api(action, payload = {}) {
+  if (cfg.demo) return demoApi(action, payload);
+  if (!cfg.url) throw new Error('Not connected yet: open Settings.');
+  const res = await fetch(cfg.url, {
+    method: 'POST', redirect: 'follow',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },   // avoids a CORS preflight
+    body: JSON.stringify(Object.assign({ k: cfg.key, action }, payload)),
+  });
+  let j;
+  try { j = await res.json(); } catch (e) { throw new Error('The Sheet sent back something odd. Check the URL is the /exec one.'); }
+  if (!j.ok) throw new Error(j.error || 'Request failed');
+  return j;
+}
+function demoApi(action, p) {
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  return wait(action === 'resolve' || action === 'add' ? 700 : 150).then(() => {
+    if (action === 'list') return { ok: true, items: store.get('demoItems', DEMO_ITEMS) };
+    if (action === 'resolve') {
+      const q = String(p.q || '').trim();
+      const name = q.replace(/https?:\/\/\S+/g, '').split('\n')[0].trim() || 'Demo place';
+      const known = DEMO_ITEMS.find(d => d.name.toLowerCase().includes(name.toLowerCase().slice(0, 6)));
+      return { ok: true, place: known ? Object.assign({}, known, { why: '' })
+        : { name, address: (cfg.near || 'Osaka') + ' (demo guess)', about: '', lat: 34.67 + Math.random() * .03, lng: 135.49 + Math.random() * .03, category: 'other', link: (q.match(/https?:\/\/\S+/) || [''])[0] } };
+    }
+    const list = store.get('demoItems', DEMO_ITEMS).slice();
+    if (action === 'add') {
+      const item = Object.assign({ id: 'd' + Date.now(), added: new Date().toISOString(), been: false }, p);
+      delete item.q; delete item.near;
+      list.push(item); store.set('demoItems', list); return { ok: true, item };
+    }
+    if (action === 'update') {
+      const i = list.findIndex(x => x.id === p.id); Object.assign(list[i], p.fields);
+      store.set('demoItems', list); return { ok: true, item: list[i] };
+    }
+    if (action === 'delete') { store.set('demoItems', list.filter(x => x.id !== p.id)); return { ok: true }; }
+  });
+}
+
+async function refresh(quiet) {
+  if (!cfg.url && !cfg.demo) { render(); return; }
+  const b = $('#syncBtn'); b.classList.add('spin');
+  try {
+    const j = await api('list');
+    items = j.items || [];
+    store.set(cfg.demo ? 'demoItems' : 'items', items);
+    lastSync = Date.now(); store.set('lastSync', lastSync); offline = false;
+  } catch (e) {
+    offline = true;
+    if (!quiet) toast(navigator.onLine ? e.message : 'Offline: showing your saved copy');
+  } finally {
+    b.classList.remove('spin'); render();
+  }
+}
+
+// ---------------------------------------------------------------- distance & links
+function metres(a, b) {
+  const R = 6371e3, r = x => x * Math.PI / 180;
+  const dLat = r(b.lat - a.lat), dLng = r(b.lng - a.lng);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(r(a.lat)) * Math.cos(r(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+function distLabel(p) {
+  if (!pos || !hasPin(p)) return '';
+  const m = metres(pos, p);
+  if (m < 1000) return `${Math.round(m / 10) * 10} m · ${Math.max(1, Math.round(m / 80))} min walk`;
+  return m < 20000 ? `${(m / 1000).toFixed(1)} km` : `${Math.round(m / 1000)} km`;
+}
+function directionsUrl(p) {
+  const u = new URL('https://www.google.com/maps/dir/');
+  u.searchParams.set('api', '1');
+  if (p.placeId) {
+    u.searchParams.set('destination', [p.name, p.address].filter(Boolean).join(', '));
+    u.searchParams.set('destination_place_id', p.placeId);
+  } else if (hasPin(p)) {
+    u.searchParams.set('destination', `${p.lat},${p.lng}`);
+  } else {
+    u.searchParams.set('destination', [p.name, p.address || cfg.near].filter(Boolean).join(', '));
+  }
+  return u.href;
+}
+function infoUrl(p) {
+  if (p.link && /google\.[^/]+\/maps|maps\.google|maps\.app\.goo\.gl|goo\.gl\/maps/.test(p.link)) return p.link;
+  const u = new URL('https://www.google.com/maps/search/');
+  u.searchParams.set('api', '1');
+  u.searchParams.set('query', [p.name, p.address || cfg.near].filter(Boolean).join(', '));
+  if (p.placeId) u.searchParams.set('query_place_id', p.placeId);
+  return u.href;
+}
+
+// ---------------------------------------------------------------- rendering
+function visible() {
+  let list = items.filter(p => (filter === 'all' || catOf(p) === filter) && !(hideBeen && p.been));
+  list.sort((a, b) => {
+    if (!!a.been !== !!b.been) return a.been ? 1 : -1;
+    if (pos) {
+      const da = hasPin(a) ? metres(pos, a) : 1e12, db = hasPin(b) ? metres(pos, b) : 1e12;
+      return da - db;
+    }
+    return String(b.added || b.id).localeCompare(String(a.added || a.id));
+  });
+  return list;
+}
+
+function cardHTML(p) {
+  const c = catOf(p);
+  const dist = distLabel(p);
+  return `<article class="card cat-${c}${p.been ? ' been' : ''}" data-id="${esc(p.id)}">
+    <p class="cat-tag">${CATS[c].emoji} ${CATS[c].label}</p>
+    <div class="card-head"><h3>${esc(p.name || 'Untitled')}</h3>${dist ? `<span class="dist">${esc(dist)}</span>` : ''}</div>
+    ${p.about ? `<p class="about">${esc(p.about)}</p>` : ''}
+    ${p.why ? `<p class="why">${esc(p.why)}</p>` : ''}
+    ${hasPin(p) ? (p.address ? `<p class="addr">${esc(p.address)}</p>` : '')
+                : `<p class="addr nopin">No pin yet: tap edit, then Find</p>`}
+    <div class="actions">
+      <a class="btn go" href="${esc(directionsUrl(p))}" target="_blank" rel="noopener">${ICON.go}Go</a>
+      <a class="btn sq" href="${esc(infoUrl(p))}" target="_blank" rel="noopener" aria-label="Open in Google Maps">${ICON.info}</a>
+      ${hasPin(p) ? `<button class="btn sq" data-act="map" aria-label="Show on map">${ICON.map}</button>` : ''}
+      <button class="btn sq${p.been ? ' on' : ''}" data-act="been" aria-label="${p.been ? 'Mark not visited' : 'Mark as been'}" aria-pressed="${!!p.been}">${ICON.check}</button>
+      <button class="btn sq" data-act="edit" aria-label="Edit">${ICON.edit}</button>
+    </div>
+  </article>`;
+}
+
+function renderChips() {
+  const counts = { all: items.filter(p => !(hideBeen && p.been)).length };
+  items.forEach(p => { if (!(hideBeen && p.been)) counts[catOf(p)] = (counts[catOf(p)] || 0) + 1; });
+  const beenCount = items.filter(p => p.been).length;
+  let h = `<button class="chip" data-f="all" aria-pressed="${filter === 'all'}">All<span class="n">${counts.all}</span></button>`;
+  for (const [k, v] of Object.entries(CATS)) {
+    if (!counts[k] && filter !== k) continue;
+    h += `<button class="chip" data-f="${k}" aria-pressed="${filter === k}">${v.emoji} ${v.label}<span class="n">${counts[k] || 0}</span></button>`;
+  }
+  if (beenCount) h += `<button class="chip" data-hide aria-pressed="${hideBeen}">✓ Hide visited<span class="n">${beenCount}</span></button>`;
+  if (!pos && items.some(hasPin)) h += `<button class="chip" data-near>📍 Nearest first</button>`;
+  $('#chips').innerHTML = h;
+}
+
+function renderSub() {
+  const n = items.length, been = items.filter(p => p.been).length;
+  let s = `${n} place${n === 1 ? '' : 's'}${been ? ` · ${been} visited` : ''}`;
+  let cls = '';
+  if (cfg.demo) s += ' · demo';
+  else if (offline) { s += ' · offline copy'; cls = 'off'; }
+  else if (lastSync) s += ' · synced';
+  $('#sub').className = 'sub ' + cls;
+  $('#sub').innerHTML = (cfg.url || cfg.demo ? '<span class="dot"></span>' : '') + esc(s);
+}
+
+function render() {
+  $('#tripTitle').textContent = cfg.trip || 'Trip Pins';
+  document.title = cfg.trip ? `${cfg.trip} · Trip Pins` : 'Trip Pins';
+  const setUp = !!(cfg.url || cfg.demo);
+  $('#fab').hidden = !setUp; $('#chips').hidden = !setUp; $('#sub').hidden = !setUp;
+  renderSub(); renderChips();
+  const list = visible();
+  const el = $('#list');
+  if (!cfg.url && !cfg.demo) {
+    el.innerHTML = `<div class="welcome">
+      <h2>Save it now. Find it later.</h2>
+      <p>Share a place from Google Maps (or paste a link, or type a name). Add why you want to go. Tap <b>Go</b> when you're ready.</p>
+      <p>Your places live in a Google Sheet you own, so they sync between phones.</p>
+      <button class="btn primary" data-open-settings>Connect my Google Sheet</button>
+      <button class="btn" data-demo>Look around with sample places</button>
+    </div>`;
+  } else if (!items.length) {
+    el.innerHTML = `<div class="empty"><h2>Nothing saved yet</h2>
+      <p>Found somewhere good? In Google Maps tap <b>Share</b>, then pick Trip Pins (Android) or your Save Place shortcut (iPhone).</p>
+      <p>Or tap <b>Add</b> and paste a link.</p></div>`;
+  } else if (!list.length) {
+    el.innerHTML = `<div class="empty"><p>Nothing here with this filter.</p></div>`;
+  } else {
+    el.innerHTML = list.map(cardHTML).join('');
+  }
+  if (map) drawMarkers();
+  const peekId = $('#peek').dataset.id;
+  if (peekId) { const p = items.find(x => x.id === peekId); p ? showPeek(p) : hidePeek(); }
+}
+
+// ---------------------------------------------------------------- location
+let watchId = null;
+function startLocating(prompted) {
+  if (!navigator.geolocation || watchId != null) return;
+  watchId = navigator.geolocation.watchPosition(g => {
+    const first = !pos;
+    pos = { lat: g.coords.latitude, lng: g.coords.longitude };
+    store.set('locOk', true);
+    if (first) { render(); if (prompted) toast('Sorted by distance'); }
+    else throttledRender();
+    if (map) drawMe();
+  }, err => {
+    watchId = null;
+    if (prompted) toast(err.code === 1 ? 'Location is blocked for this site in your browser settings' : 'Couldn’t get your location');
+  }, { enableHighAccuracy: true, maximumAge: 20000, timeout: 20000 });
+}
+let rT = 0;
+function throttledRender() {
+  const now = Date.now();
+  if (now - rT > 15000 && !document.querySelector('dialog[open]')) { rT = now; render(); }
+}
+
+// ---------------------------------------------------------------- map
+let map = null, markerLayer = null, meMarker = null, markers = {};
+function ensureMap() {
+  if (map || !window.L) return !!map;
+  map = L.map('map', { zoomControl: false, attributionControl: true }).setView([34.6873, 135.5262], 13);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    maxZoom: 19, subdomains: 'abcd',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+  }).addTo(map);
+  markerLayer = L.layerGroup().addTo(map);
+  map.on('click', hidePeek);
+  drawMarkers(); drawMe(); fitAll(false);
+  return true;
+}
+function drawMarkers() {
+  if (!markerLayer) return;
+  markerLayer.clearLayers(); markers = {};
+  const sel = $('#peek').dataset.id;
+  visible().filter(hasPin).forEach(p => {
+    const c = catOf(p);
+    const icon = L.divIcon({
+      className: '', iconSize: [34, 34], iconAnchor: [17, 41],
+      html: `<div class="pin cat-${c}${p.been ? ' been' : ''}${sel === p.id ? ' sel' : ''}"><span>${CATS[c].emoji}</span></div>`,
+    });
+    const m = L.marker([p.lat, p.lng], { icon, title: p.name, riseOnHover: true })
+      .on('click', e => { L.DomEvent.stopPropagation(e); showPeek(p); drawMarkers(); })
+      .addTo(markerLayer);
+    markers[p.id] = m;
+  });
+}
+function drawMe() {
+  if (!map || !pos) return;
+  if (!meMarker) meMarker = L.marker([pos.lat, pos.lng], { icon: L.divIcon({ className: '', html: '<div class="me"></div>', iconSize: [18, 18], iconAnchor: [9, 9] }), interactive: false, zIndexOffset: -100 }).addTo(map);
+  else meMarker.setLatLng([pos.lat, pos.lng]);
+}
+function fitAll(animate = true) {
+  if (!map) return;
+  const pts = visible().filter(hasPin).map(p => [p.lat, p.lng]);
+  if (pos) {
+    // Keep the view local: only places within 30 km of you, plus you.
+    const near = visible().filter(p => hasPin(p) && metres(pos, p) < 30000).map(p => [p.lat, p.lng]);
+    if (near.length) { map.fitBounds(L.latLngBounds(near.concat([[pos.lat, pos.lng]])), { padding: [50, 50], maxZoom: 16, animate }); return; }
+  }
+  if (pts.length) map.fitBounds(L.latLngBounds(pts), { padding: [50, 50], maxZoom: 16, animate });
+  else if (pos) map.setView([pos.lat, pos.lng], 15, { animate });
+}
+function showPeek(p) {
+  const pk = $('#peek'); pk.dataset.id = p.id; pk.innerHTML = cardHTML(p); pk.classList.add('open');
+  document.body.classList.add('peeking');
+}
+function hidePeek() {
+  const pk = $('#peek'); if (!pk.dataset.id) return;
+  delete pk.dataset.id; pk.classList.remove('open'); pk.innerHTML = '';
+  document.body.classList.remove('peeking'); drawMarkers();
+}
+function setTopH() { document.documentElement.style.setProperty('--topH', $('#top').offsetHeight + 'px'); }
+
+function setView(v) {
+  view = v;
+  document.body.classList.toggle('show-map', v === 'map');
+  $('#tabList').setAttribute('aria-selected', v === 'list');
+  $('#tabMap').setAttribute('aria-selected', v === 'map');
+  if (v === 'map') {
+    setTopH();
+    if (!ensureMap()) {
+      // Leaflet still loading: try again shortly.
+      const t = setInterval(() => { if (window.L) { clearInterval(t); ensureMap(); } }, 200);
+    } else setTimeout(() => map.invalidateSize(), 0);
+  } else hidePeek();
+}
+
+// ---------------------------------------------------------------- add / edit sheet
+const sheet = $('#placeSheet');
+let editing = null;        // item being edited, or null when adding
+let draft = {};            // resolved place data (lat, lng, placeId, link…)
+let chosenCat = null;      // category the person picked by hand
+let resolveSeq = 0, resolving = null, typeTimer = null;
+
+function catButtons(sel) {
+  $('#catPick').innerHTML = Object.entries(CATS).map(([k, v]) =>
+    `<button type="button" class="cat-${k}" data-cat="${k}" aria-pressed="${sel === k}">${v.emoji} ${v.label}</button>`).join('');
+}
+function setStatus(el, kind, html) {
+  el.className = 'status' + (kind ? ' show ' + kind : '');
+  el.innerHTML = html || '';
+}
+
+function openAdd(prefill) {
+  editing = null; draft = {}; chosenCat = null;
+  $('#placeTitle').textContent = 'Add a place';
+  $('#findBox').hidden = false; $('#relocBtn').hidden = true;
+  $('#beenRow').hidden = true; $('#delBtn').hidden = true;
+  $('#q').value = prefill || ''; $('#fWhy').value = ''; $('#fName').value = '';
+  $('#fAbout').value = ''; $('#fAddr').value = '';
+  catButtons(null); setStatus($('#status'), '', '');
+  $('#saveBtn').disabled = false; $('#saveBtn').textContent = 'Save';
+  sheet.showModal();
+  if (prefill) { lookUp(prefill); setTimeout(() => $('#fWhy').focus(), 50); }
+  else setTimeout(() => $('#q').focus(), 50);
+}
+
+function openEdit(p) {
+  editing = p; draft = { lat: p.lat, lng: p.lng, placeId: p.placeId, link: p.link }; chosenCat = catOf(p);
+  $('#placeTitle').textContent = 'Edit place';
+  $('#findBox').hidden = true; $('#relocBtn').hidden = false;
+  $('#beenRow').hidden = false; $('#delBtn').hidden = false;
+  $('#fWhy').value = p.why || ''; $('#fName').value = p.name || '';
+  $('#fAbout').value = p.about || ''; $('#fAddr').value = p.address || '';
+  $('#fBeen').checked = !!p.been;
+  catButtons(chosenCat);
+  setStatus($('#status'), hasPin(p) ? '' : 'bad', hasPin(p) ? '' : '<div>No map pin yet. Check the name and address, then tap <b>Find</b>.</div>');
+  $('#saveBtn').disabled = false; $('#saveBtn').textContent = 'Save';
+  sheet.showModal();
+}
+
+function lookUp(q, forEdit) {
+  q = String(q || '').trim();
+  if (!q) { setStatus($('#status'), '', ''); return null; }
+  const seq = ++resolveSeq;
+  setStatus($('#status'), 'show', '<div class="spinner"></div><div>Looking it up…</div>');
+  resolving = api('resolve', { q, near: cfg.near }).then(j => {
+    if (seq !== resolveSeq) return;
+    const p = j.place || {};
+    draft = { lat: p.lat, lng: p.lng, placeId: p.placeId || '', link: p.link || (forEdit ? draft.link : '') };
+    if (!forEdit || !$('#fName').value) $('#fName').value = p.name || $('#fName').value;
+    if (p.about && !$('#fAbout').value) $('#fAbout').value = p.about;
+    if (p.address) $('#fAddr').value = p.address;
+    if (!chosenCat && p.category) catButtons(p.category);
+    if (hasPin(p)) {
+      setStatus($('#status'), 'ok', `<div>📍</div><div><b>${esc(p.name || 'Found it')}</b><small>${esc(p.address || `${(+p.lat).toFixed(4)}, ${(+p.lng).toFixed(4)}`)}</small></div>`);
+    } else {
+      setStatus($('#status'), 'bad', `<div>🤔</div><div><b>Couldn’t pin this one</b><small>You can still save it. Add an address or area below and tap Find later.</small></div>`);
+    }
+  }).catch(e => {
+    if (seq !== resolveSeq) return;
+    setStatus($('#status'), 'bad', `<div>⚠️</div><div><b>Lookup failed</b><small>${esc(e.message)}. You can still type the details and save.</small></div>`);
+  }).finally(() => { if (seq === resolveSeq) resolving = null; });
+  return resolving;
+}
+
+function pickedCat() {
+  const b = $('#catPick [aria-pressed="true"]');
+  return b ? b.dataset.cat : 'other';
+}
+
+async function savePlace(ev) {
+  ev.preventDefault();
+  const btn = $('#saveBtn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    if (resolving) await resolving;
+    const fields = {
+      name: $('#fName').value.trim(), about: $('#fAbout').value.trim(), why: $('#fWhy').value.trim(),
+      address: $('#fAddr').value.trim(), category: pickedCat(),
+      lat: draft.lat == null ? '' : draft.lat, lng: draft.lng == null ? '' : draft.lng,
+      placeId: draft.placeId || '', link: draft.link || '',
+    };
+    if (editing) {
+      fields.been = $('#fBeen').checked;
+      const j = await api('update', { id: editing.id, fields });
+      Object.assign(editing, j.item || fields);
+      toast('Saved');
+    } else {
+      const q = $('#q').value.trim();
+      if (!fields.name && !q) { toast('Paste a link or type a name first'); btn.disabled = false; btn.textContent = 'Save'; return; }
+      if (!fields.name) fields.name = q.replace(/https?:\/\/\S+/g, '').trim();
+      if (!fields.link) { const m = q.match(/https?:\/\/\S+/); if (m) fields.link = m[0]; }
+      const payload = fields.name || fields.lat !== '' ? fields : { q, why: fields.why, category: fields.category };
+      payload.near = cfg.near;
+      const j = await api('add', payload);
+      items.push(j.item);
+      toast(`Saved ${j.item.name}`);
+    }
+    store.set(cfg.demo ? 'demoItems' : 'items', items);
+    sheet.close(); render();
+  } catch (e) {
+    toast(e.message);
+    btn.disabled = false; btn.textContent = 'Save';
+  }
+}
+
+async function toggleBeen(p) {
+  p.been = !p.been; render();
+  try { await api('update', { id: p.id, fields: { been: p.been } }); store.set(cfg.demo ? 'demoItems' : 'items', items); }
+  catch (e) { p.been = !p.been; render(); toast(e.message); }
+}
+
+async function deletePlace() {
+  if (!editing || !confirm(`Delete ${editing.name}?`)) return;
+  try {
+    await api('delete', { id: editing.id });
+    items = items.filter(x => x !== editing);
+    store.set(cfg.demo ? 'demoItems' : 'items', items);
+    sheet.close(); hidePeek(); render(); toast('Deleted');
+  } catch (e) { toast(e.message); }
+}
+
+// ---------------------------------------------------------------- settings
+const setSheet = $('#setSheet');
+function openSettings() {
+  $('#sTrip').value = cfg.trip; $('#sNear').value = cfg.near;
+  $('#sUrl').value = cfg.url; $('#sKey').value = cfg.key;
+  $('#demoBtn').textContent = cfg.demo ? 'Leave demo' : 'Try demo';
+  setStatus($('#setStatus'), '', '');
+  setSheet.showModal();
+}
+async function saveSettings(ev) {
+  ev.preventDefault();
+  const url = $('#sUrl').value.trim(), key = $('#sKey').value.trim();
+  cfg.trip = $('#sTrip').value.trim(); cfg.near = $('#sNear').value.trim();
+  if (url && !/^https:\/\/script\.google(usercontent)?\.com\/.+\/exec/.test(url)) {
+    setStatus($('#setStatus'), 'bad', '<div>That doesn’t look like an Apps Script web app URL. It should start with https://script.google.com/macros/s/ and end in /exec.</div>');
+    return;
+  }
+  const changed = url !== cfg.url || key !== cfg.key;
+  if (url && changed) {
+    setStatus($('#setStatus'), 'show', '<div class="spinner"></div><div>Connecting…</div>');
+    const was = Object.assign({}, cfg);
+    Object.assign(cfg, { url, key, demo: false });
+    try {
+      const j = await api('list');
+      items = j.items || []; store.set('items', items); offline = false; lastSync = Date.now();
+    } catch (e) {
+      Object.assign(cfg, was);
+      setStatus($('#setStatus'), 'bad', `<div><b>Couldn’t connect</b><small>${esc(e.message)}</small></div>`);
+      return;
+    }
+  }
+  store.set('cfg', cfg);
+  setSheet.close(); render();
+  if (url && changed) toast('Connected to your Sheet');
+}
+function toggleDemo() {
+  cfg.demo = !cfg.demo; store.set('cfg', cfg);
+  items = cfg.demo ? store.get('demoItems', DEMO_ITEMS) : store.get('items', []);
+  if (cfg.demo && !cfg.near) cfg.near = 'Osaka, Japan';
+  setSheet.open && setSheet.close();
+  render(); refresh(true);
+  toast(cfg.demo ? 'Demo mode: changes stay on this phone' : 'Demo off');
+}
+
+// ---------------------------------------------------------------- events
+document.addEventListener('click', e => {
+  const t = e.target.closest('button, a');
+  if (!t) return;
+  if (t.matches('[data-close]')) { t.closest('dialog').close(); return; }
+  if (t.matches('[data-open-settings]')) { openSettings(); return; }
+  if (t.matches('[data-demo]')) { toggleDemo(); return; }
+  if (t.dataset.f) { filter = t.dataset.f; hidePeek(); render(); if (map) fitAll(); return; }
+  if (t.hasAttribute('data-hide')) { hideBeen = !hideBeen; store.set('hideBeen', hideBeen); render(); return; }
+  if (t.hasAttribute('data-near')) { startLocating(true); return; }
+  if (t.dataset.cat) { chosenCat = t.dataset.cat; catButtons(chosenCat); return; }
+  const card = t.closest('.card'); if (!card) return;
+  const p = items.find(x => x.id === card.dataset.id); if (!p) return;
+  const act = t.dataset.act;
+  if (act === 'edit') openEdit(p);
+  else if (act === 'been') toggleBeen(p);
+  else if (act === 'map') {
+    setView('map');
+    const go = () => { if (!map) return setTimeout(go, 150); map.setView([p.lat, p.lng], 16); showPeek(p); drawMarkers(); };
+    go();
+  }
+});
+// Tap outside a sheet (on the dim backdrop) to close it.
+document.querySelectorAll('dialog.sheet').forEach(d => d.addEventListener('click', e => { if (e.target === d) d.close(); }));
+
+$('#tabList').onclick = () => setView('list');
+$('#tabMap').onclick = () => setView('map');
+$('#fab').onclick = () => openAdd('');
+$('#settingsBtn').onclick = openSettings;
+$('#syncBtn').onclick = () => refresh(false);
+$('#fitBtn').onclick = () => fitAll();
+$('#locBtn').onclick = () => { if (pos && map) map.setView([pos.lat, pos.lng], 16); else startLocating(true); };
+$('#placeForm').addEventListener('submit', savePlace);
+$('#setForm').addEventListener('submit', saveSettings);
+$('#demoBtn').onclick = toggleDemo;
+$('#delBtn').onclick = deletePlace;
+$('#relocBtn').onclick = () => {
+  const q = [$('#fName').value, $('#fAddr').value].map(s => s.trim()).filter(Boolean).join(', ');
+  lookUp(q, true);
+};
+$('#q').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); clearTimeout(typeTimer); lookUp($('#q').value); $('#fWhy').focus(); } });
+$('#q').addEventListener('input', () => {
+  clearTimeout(typeTimer);
+  const v = $('#q').value;
+  // Links look up straight away; typed names wait for a pause.
+  typeTimer = setTimeout(() => lookUp(v), /https?:\/\//.test(v) ? 50 : 900);
+});
+$('#pasteBtn').onclick = async () => {
+  try {
+    const t = await navigator.clipboard.readText();
+    if (t) { $('#q').value = t; lookUp(t); $('#fWhy').focus(); return; }
+  } catch (e) {}
+  $('#q').focus(); toast('Long-press the box and choose Paste');
+};
+document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(true); });
+window.addEventListener('resize', () => { if (view === 'map') { setTopH(); map && map.invalidateSize(); } });
+
+// ---------------------------------------------------------------- start
+render();
+try {
+  if (store.get('locOk', false)) startLocating(false);
+  else if (navigator.permissions) navigator.permissions.query({ name: 'geolocation' }).then(s => { if (s.state === 'granted') startLocating(false); }).catch(() => {});
+} catch (e) {}
+refresh(true);
+
+// Something shared to the app (Android share sheet), or ?add= in the URL.
+const sp = new URLSearchParams(location.search);
+const shared = [sp.get('title'), sp.get('text'), sp.get('url'), sp.get('add')]
+  .filter(Boolean).filter((v, i, a) => a.indexOf(v) === i && !a.some((w, j) => j !== i && w.includes(v) && w !== v)).join('\n');
+if (shared) {
+  history.replaceState(null, '', location.pathname);
+  if (!cfg.url && !cfg.demo) { openSettings(); toast('Connect your Sheet first, then share again'); }
+  else openAdd(shared);
+}
+
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+})();
+</script>
+</body>
+</html>
