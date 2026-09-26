@@ -340,6 +340,7 @@ details.more summary { font-size: 14px; color: var(--muted); cursor: pointer; }
       <h2>Settings</h2>
       <button type="button" class="btn ghost" data-close>Close</button>
     </div>
+    <p class="hint">Trip name and area are shared with every phone using this Sheet.</p>
     <label class="f" for="sTrip">Trip name</label>
     <input class="in" id="sTrip" placeholder="Osaka, October">
     <label class="f" for="sNear">Where you're travelling</label>
@@ -421,7 +422,15 @@ let lastSync = store.get('lastSync', null);
 let offline = false;
 
 // ---------------------------------------------------------------- API
+let lastWriteAt = 0;
+const WRITES = ['add', 'update', 'delete', 'settings'];
 async function api(action, payload = {}) {
+  if (WRITES.includes(action)) lastWriteAt = Date.now();
+  const j = await apiCall(action, payload);
+  if (WRITES.includes(action)) { lastWriteAt = Date.now(); scheduleRefresh(); }
+  return j;
+}
+async function apiCall(action, payload) {
   if (cfg.demo) return demoApi(action, payload);
   if (!cfg.url) throw new Error('Not connected yet: open Settings.');
   const res = await fetch(cfg.url, {
@@ -431,7 +440,7 @@ async function api(action, payload = {}) {
   });
   let j;
   try { j = await res.json(); } catch (e) { throw new Error('The Sheet sent back something odd. Check the URL is the /exec one.'); }
-  if (!j.ok) throw new Error(j.error || 'Request failed');
+  if (!j.ok) { const e = new Error(j.error || 'Request failed'); e.gone = !!j.gone; throw e; }
   return j;
 }
 function demoApi(action, p) {
@@ -451,27 +460,65 @@ function demoApi(action, p) {
       delete item.q; delete item.near;
       list.push(item); store.set('demoItems', list); return { ok: true, item };
     }
+    if (action === 'settings') return { ok: true, settings: { trip: p.trip, near: p.near } };
     if (action === 'update') {
-      const i = list.findIndex(x => x.id === p.id); Object.assign(list[i], p.fields);
+      const i = list.findIndex(x => x.id === p.id);
+      if (i < 0) return Promise.reject(Object.assign(new Error('That place was deleted on another phone.'), { gone: true }));
+      Object.assign(list[i], p.fields);
       store.set('demoItems', list); return { ok: true, item: list[i] };
     }
     if (action === 'delete') { store.set('demoItems', list.filter(x => x.id !== p.id)); return { ok: true }; }
   });
 }
 
+let refreshSeq = 0, refreshTimer = null;
+function scheduleRefresh(ms = 1500) {
+  clearTimeout(refreshTimer);
+  refreshTimer = setTimeout(() => refresh(true), ms);
+}
 async function refresh(quiet) {
   if (!cfg.url && !cfg.demo) { render(); return; }
+  const seq = ++refreshSeq, started = Date.now();
   const b = $('#syncBtn'); b.classList.add('spin');
   try {
     const j = await api('list');
+    // A newer refresh is on its way, or this phone saved something after this one
+    // started: this answer is out of date, so drop it (the next refresh has it).
+    if (seq !== refreshSeq) return;
+    if (started < lastWriteAt) { scheduleRefresh(300); return; }
     items = j.items || [];
     store.set(cfg.demo ? 'demoItems' : 'items', items);
+    if (j.settings && !cfg.demo) adoptSettings(j.settings);
     lastSync = Date.now(); store.set('lastSync', lastSync); offline = false;
   } catch (e) {
     offline = true;
     if (!quiet) toast(navigator.onLine ? e.message : 'Offline: showing your saved copy');
   } finally {
     b.classList.remove('spin'); render();
+  }
+}
+
+function upsert(item) {
+  const i = items.findIndex(x => x.id === item.id);
+  if (i >= 0) items[i] = item; else items.push(item);
+  store.set(cfg.demo ? 'demoItems' : 'items', items);
+}
+function dropLocal(id) {
+  items = items.filter(x => x.id !== id);
+  store.set(cfg.demo ? 'demoItems' : 'items', items);
+  if ($('#peek').dataset.id === id) hidePeek();
+}
+function goneElsewhere(id) {
+  dropLocal(id); render(); toast('That place was deleted on another phone');
+}
+// Trip name and area are shared through the Sheet, so all phones match.
+function adoptSettings(st) {
+  if (!st.trip && !st.near && (cfg.trip || cfg.near)) {
+    api('settings', { trip: cfg.trip, near: cfg.near }).catch(() => {});   // first phone sets them
+    return;
+  }
+  if (st.trip !== cfg.trip || st.near !== cfg.near) {
+    cfg.trip = st.trip; cfg.near = st.near; store.set('cfg', cfg);
   }
 }
 
@@ -723,7 +770,9 @@ function openAdd(prefill) {
   else setTimeout(() => $('#q').focus(), 50);
 }
 
+let original = null;
 function openEdit(p) {
+  original = Object.assign({}, p);
   editing = p; draft = { lat: p.lat, lng: p.lng, placeId: p.placeId, link: p.link }; chosenCat = catOf(p);
   $('#placeTitle').textContent = 'Edit place';
   $('#findBox').hidden = true; $('#relocBtn').hidden = false;
@@ -781,8 +830,21 @@ async function savePlace(ev) {
     };
     if (editing) {
       fields.been = $('#fBeen').checked;
-      const j = await api('update', { id: editing.id, fields });
-      Object.assign(editing, j.item || fields);
+      // Only send what you changed, so you don't overwrite edits made on another phone.
+      const changed = {};
+      for (const k of Object.keys(fields)) {
+        const was = original[k] == null ? '' : original[k];
+        if (String(fields[k]) !== String(was)) changed[k] = fields[k];
+      }
+      if (Object.keys(changed).length) {
+        try {
+          const j = await api('update', { id: editing.id, fields: changed });
+          upsert(j.item);
+        } catch (e) {
+          if (e.gone) { sheet.close(); goneElsewhere(editing.id); return; }
+          throw e;
+        }
+      }
       toast('Saved');
     } else {
       const q = $('#q').value.trim();
@@ -792,11 +854,11 @@ async function savePlace(ev) {
       const payload = fields.name || fields.lat !== '' ? fields : { q, why: fields.why, category: fields.category };
       payload.near = cfg.near;
       const j = await api('add', payload);
-      items.push(j.item);
+      upsert(j.item);
       const added = j.item;
-      toast(`Saved ${added.name}`, { label: 'Undo', fn: () => removePlace(added) });
+      if (j.duplicate) toast(fields.why ? `Already saved: ${added.name}. Your note was added.` : `Already saved: ${added.name}`);
+      else toast(`Saved ${added.name}`, { label: 'Undo', fn: () => removePlace(added) });
     }
-    store.set(cfg.demo ? 'demoItems' : 'items', items);
     sheet.close(); render();
   } catch (e) {
     toast(e.message);
@@ -805,17 +867,22 @@ async function savePlace(ev) {
 }
 
 async function toggleBeen(p) {
-  p.been = !p.been; render();
-  try { await api('update', { id: p.id, fields: { been: p.been } }); store.set(cfg.demo ? 'demoItems' : 'items', items); }
-  catch (e) { p.been = !p.been; render(); toast(e.message); }
+  const want = !p.been;
+  p.been = want; render();
+  try {
+    const j = await api('update', { id: p.id, fields: { been: want } });
+    upsert(j.item); render();
+  } catch (e) {
+    if (e.gone) return goneElsewhere(p.id);
+    const cur = items.find(x => x.id === p.id); if (cur) cur.been = !want;
+    render(); toast(e.message);
+  }
 }
 
 async function removePlace(p) {
   try {
     await api('delete', { id: p.id });
-    items = items.filter(x => x.id !== p.id);
-    store.set(cfg.demo ? 'demoItems' : 'items', items);
-    if ($('#peek').dataset.id === p.id) hidePeek();
+    dropLocal(p.id);
     render(); toast(`Deleted ${p.name || 'place'}`);
   } catch (e) { toast(e.message); }
 }
@@ -854,6 +921,7 @@ async function saveSettings(ev) {
     return;
   }
   const changed = url !== cfg.url || key !== cfg.key;
+  let joined = false;
   if (url && changed) {
     setStatus($('#setStatus'), 'show', '<div class="spinner"></div><div>Connecting…</div>');
     const was = Object.assign({}, cfg);
@@ -861,6 +929,9 @@ async function saveSettings(ev) {
     try {
       const j = await api('list');
       items = j.items || []; store.set('items', items); offline = false; lastSync = Date.now();
+      // Joining a Sheet another phone already set up: take its trip name and area.
+      const st = j.settings || {};
+      if (!cfg.trip && !cfg.near && (st.trip || st.near)) { cfg.trip = st.trip; cfg.near = st.near; joined = true; }
     } catch (e) {
       Object.assign(cfg, was);
       setStatus($('#setStatus'), 'bad', `<div><b>Couldn’t connect</b><small>${esc(e.message)}</small></div>`);
@@ -868,6 +939,7 @@ async function saveSettings(ev) {
     }
   }
   store.set('cfg', cfg);
+  if (cfg.url && !cfg.demo && !joined) api('settings', { trip: cfg.trip, near: cfg.near }).catch(() => {});
   setSheet.close(); render();
   if (url && changed) toast('Connected to your Sheet');
 }
@@ -935,6 +1007,9 @@ $('#pasteBtn').onclick = async () => {
   $('#q').focus(); toast('Long-press the box and choose Paste');
 };
 document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(true); });
+setInterval(() => {
+  if (!document.hidden && !document.querySelector('dialog[open]') && navigator.onLine) refresh(true);
+}, 90000);
 window.addEventListener('resize', () => { if (view === 'map') { setTopH(); map && map.invalidateSize(); } });
 
 // ---------------------------------------------------------------- start

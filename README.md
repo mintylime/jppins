@@ -71,7 +71,6 @@ In the **Shortcuts** app, tap **+** and build this:
      | `q` | *Shortcut Input* (tap the variable bar above the keyboard) |
      | `why` | *Provided Input* |
 
-   - Optional fifth field: `near` = `Osaka, Japan`
 4. Add **Get Dictionary Value**: get **Value** for `name` in *Contents of URL*.
 5. Add **Show Notification**: `Saved: ` followed by the *Dictionary Value* variable.
 
@@ -80,6 +79,19 @@ In the **Shortcuts** app, tap **+** and build this:
 If the notification says *Saved:* with no name, the key or URL is probably wrong. Run it again and check the *Contents of URL* output in the Shortcuts editor.
 
 ---
+
+## Several phones, one Sheet
+
+Point as many phones at the same Sheet as you like (yours, a travel partner's, an iPad). They all share one list.
+
+- **Trip name and area** are stored in the Sheet. Set them on the first phone; a phone you connect later picks them up by itself (leave those two boxes blank when connecting it). Change them on any phone and the rest follow.
+- **New places** show up on the other phones when the app is next opened, when you tap refresh, or within about 90 seconds while it's open.
+- **The same place saved twice** (say you both share Kuromon Market) stays as one pin. The second person's note is added under the first.
+- **Edits** only change what you actually touched. If you fix the type while your partner adds a note, both changes stick.
+- **Visited ticks are shared.** If one of you ticks a place, it's ticked for everyone.
+- **Deleted on one phone, still showing on another?** Tapping it tells you it's gone and removes it. Nothing breaks.
+
+Two phones can save at exactly the same moment; the Sheet takes them one at a time.
 
 ## Using it
 
