@@ -259,6 +259,15 @@ details.more summary { font-size: 14px; color: var(--muted); cursor: pointer; }
   padding: 6px 2px; margin: -6px 0; white-space: nowrap;
 }
 .btn.danger.armed { background: #C0392B; border-color: #C0392B; color: #fff; }
+/* ---------- help ---------- */
+#helpSheet .seg { margin-bottom: 4px; }
+.help ol, .help ul { margin: 6px 0 0; padding-left: 20px; font-size: 15px; line-height: 1.45; }
+.help li { margin: 7px 0; }
+.help p { font-size: 15px; line-height: 1.45; margin: 8px 0 0; }
+.help .note { font-size: 13px; color: var(--muted); background: var(--soft); border-radius: 10px; padding: 9px 11px; margin-top: 10px; }
+.help kbd { font: inherit; font-weight: 700; }
+.help [data-os] { display: none; }
+#helpSheet[data-os="android"] [data-os="android"], #helpSheet[data-os="ios"] [data-os="ios"] { display: revert; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 </style>
 </head>
@@ -269,6 +278,9 @@ details.more summary { font-size: 14px; color: var(--muted); cursor: pointer; }
     <h1 id="tripTitle">Trip Pins</h1>
     <button class="icon-btn" id="syncBtn" aria-label="Refresh">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+    </button>
+    <button class="icon-btn" id="helpBtn" aria-label="How to use Trip Pins">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 2.5-3 4.5"/><path d="M12 17.5h.01"/></svg>
     </button>
     <button class="icon-btn" id="settingsBtn" aria-label="Settings">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -345,6 +357,73 @@ details.more summary { font-size: 14px; color: var(--muted); cursor: pointer; }
       <button type="submit" class="btn primary" id="saveBtn">Save</button>
     </div>
   </form>
+</dialog>
+
+<!-- Help sheet -->
+<dialog class="sheet" id="helpSheet" data-os="android">
+  <div class="sheet-in help">
+    <div class="grab"></div>
+    <div class="sheet-head">
+      <h2>How to use Trip Pins</h2>
+      <button type="button" class="btn ghost" data-close autofocus>Close</button>
+    </div>
+    <div class="seg" role="tablist" aria-label="Your phone">
+      <button role="tab" data-help-os="android" aria-selected="true">Android</button>
+      <button role="tab" data-help-os="ios" aria-selected="false">iPhone</button>
+    </div>
+
+    <h3 class="sec">1. Join the trip</h3>
+    <ol>
+      <li>Got an invite link by WhatsApp or text? Just open it. You're connected; there's nothing to type.</li>
+      <li>No link? Tap <kbd>Connect</kbd>, paste the URL and the Key from the person who set up the trip, and tap <kbd>Connect</kbd>.</li>
+    </ol>
+
+    <h3 class="sec">2. Put it on your home screen</h3>
+    <ol data-os="android">
+      <li>In Chrome, tap the menu <kbd>⋮</kbd> (top right).</li>
+      <li>Tap <kbd>Add to Home screen</kbd> or <kbd>Install</kbd>.</li>
+    </ol>
+    <p data-os="android">Now it opens like a normal app, and it remembers the trip.</p>
+    <ol data-os="ios">
+      <li>Open this page in <b>Safari</b> (other browsers can't do this step).</li>
+      <li>Tap the Share button (the square with an arrow), then <kbd>Add to Home Screen</kbd> → <kbd>Add</kbd>.</li>
+      <li>Open Trip Pins from your home screen. It starts blank: that's normal on iPhone.</li>
+      <li>Go back to WhatsApp or Messages, press and hold the invite link, and tap <kbd>Copy</kbd>.</li>
+      <li>In Trip Pins, tap <kbd>Connect</kbd> → <kbd>Paste</kbd> → <kbd>Connect</kbd>. You only do this once.</li>
+    </ol>
+
+    <h3 class="sec">3. Save places from Google Maps</h3>
+    <ol data-os="android">
+      <li>In the Google Maps app, open a place you like.</li>
+      <li>Tap <kbd>Share</kbd>, then pick <kbd>Trip Pins</kbd>.</li>
+      <li>Type a quick note on why you want to go, and tap <kbd>Save</kbd>.</li>
+    </ol>
+    <p class="note" data-os="android">Trip Pins not in the share menu? Open it once from your home screen, then try again. It may also be hiding under <b>More</b>.</p>
+    <ol data-os="ios">
+      <li>In the Google Maps app, open a place you like.</li>
+      <li>Tap <kbd>Share</kbd> → <kbd>Copy link</kbd>.</li>
+      <li>Open Trip Pins, tap <kbd>+ Add</kbd>, then <kbd>Paste</kbd>. It looks the place up for you.</li>
+      <li>Type a quick note on why you want to go, and tap <kbd>Save</kbd>.</li>
+    </ol>
+    <p class="note" data-os="ios">iPhones don't let web apps sit in the share menu. If you save lots of places, ask whoever set up the trip for the "Save to Trip Pins" Shortcut; it saves straight from Google Maps' share menu.</p>
+    <p>No link handy? Tap <kbd>+ Add</kbd> and type a name, like “Kuromon Market”.</p>
+
+    <h3 class="sec">4. Using the shared list</h3>
+    <ul>
+      <li><b>Go</b> opens Google Maps with directions to that spot.</li>
+      <li><b>List</b>: tap <kbd>📍 Nearest first</kbd> (and allow location) when you're out on the trip. <b>Map</b> shows everyone's places as coloured pins, and you as a blue dot.</li>
+      <li><b>✓</b> marks a place as visited. The pencil fixes a name, a note or a typo.</li>
+      <li>It's one live list. Anything you add, edit or tick shows on everyone else's phone too, within about a minute and a half.</li>
+    </ul>
+
+    <h3 class="sec">Stuck?</h3>
+    <ul>
+      <li>Places look out of date? Tap the refresh arrow at the top.</li>
+      <li>“Key changed” message? Ask the organiser for a fresh invite link and open it.</li>
+      <li>Want to bring someone else in? <kbd>⚙</kbd> → <kbd>Add another phone</kbd> sends them a link.</li>
+    </ul>
+    <div class="pad-bottom"></div>
+  </div>
 </dialog>
 
 <!-- Settings sheet -->
@@ -1232,6 +1311,20 @@ $('#tabList').onclick = () => setView('list');
 $('#tabMap').onclick = () => setView('map');
 $('#fab').onclick = () => openAdd('');
 $('#settingsBtn').onclick = openSettings;
+
+// ----- help: shows Android or iPhone steps, guessing from the phone first
+const helpSheet = $('#helpSheet');
+function setHelpOS(os) {
+  helpSheet.dataset.os = os;
+  helpSheet.querySelectorAll('[data-help-os]').forEach(b => b.setAttribute('aria-selected', b.dataset.helpOs === os));
+}
+helpSheet.querySelectorAll('[data-help-os]').forEach(b => b.onclick = () => setHelpOS(b.dataset.helpOs));
+$('#helpBtn').onclick = () => {
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  setHelpOS(ios ? 'ios' : 'android');
+  helpSheet.showModal();
+  helpSheet.scrollTop = 0;
+};
 $('#syncBtn').onclick = () => refresh(false);
 $('#fitBtn').onclick = () => fitAll();
 $('#locBtn').onclick = () => { if (pos && map) map.setView([pos.lat, pos.lng], 16); else startLocating(true); };
