@@ -4,6 +4,48 @@ A phone app for places you might want to go. Share a spot from Google Maps (or p
 
 Everything's free. No Google Cloud account, no billing, no API keys.
 
+**Been sent a link to someone's trip?** You only need [Joining a trip](#joining-a-trip) below (about 2 minutes). The rest of this page is for whoever sets it up. Inside the app, the **?** button next to the settings gear shows the same steps for Android or iPhone.
+
+---
+
+## Joining a trip
+
+### 1. Connect
+
+- **Got an invite link** (by WhatsApp, Messages or email)? Open it. You're connected, and the trip name comes with it.
+- **Got a URL and a key instead?** Go to the trip's page (for example https://mintylime.github.io/jppins/), tap **Connect**, paste both, and tap **Connect**.
+
+### 2. Put it on your home screen
+
+**Android (Chrome):** tap the menu **⋮** (top right), then **Add to Home screen** or **Install**. It opens like a normal app and keeps the connection.
+
+**iPhone (Safari only):**
+
+1. Tap the Share button (the square with an arrow), then **Add to Home Screen → Add**.
+2. Open Trip Pins from the home screen. It starts blank; iPhones give home-screen apps their own storage, separate from Safari.
+3. Go back to the chat, press and hold the invite link, and tap **Copy**.
+4. In Trip Pins, tap **Connect → Paste → Connect**. You only do this once.
+
+### 3. Save places from Google Maps
+
+**Android:** in Google Maps, open a place, tap **Share**, and pick **Trip Pins**. Type why you want to go, then tap **Save**. Not in the share menu? Open Trip Pins once from the home screen and try again; on some phones it hides under **More**.
+
+**iPhone:** in Google Maps, open a place, tap **Share → Copy link**. Open Trip Pins, tap **+ Add → Paste**, type why, and tap **Save**. iPhones don't let web apps into the share menu, so if you save a lot, ask the organiser for the [Shortcut](#4-adding-from-iphone-a-shortcut-about-10-minutes-once); it saves straight from Google Maps.
+
+No link handy? Tap **+ Add** and type a name, like *Kuromon Market*.
+
+### 4. Use the shared list
+
+- **Go** opens Google Maps with directions.
+- **List:** tap **📍 Nearest first** once you're out and about. **Map:** everyone's places as coloured pins, with you as a blue dot.
+- **✓** marks a place as visited; the pencil fixes a name or note.
+- It's one live list. What you add, edit or tick shows on everyone's phone within about 90 seconds.
+- *"Key changed"*? Ask the organiser for a fresh invite link.
+
+---
+
+## Setting it up (for the organiser)
+
 Setup takes about 20 minutes, in four parts. You do parts 1 and 2 once, part 3 on each phone, and part 4 on each iPhone.
 
 ---
@@ -109,6 +151,7 @@ Two phones can save at exactly the same moment; the Sheet takes them one at a ti
 
 ## Using it
 
+- **?** (next to the gear) shows the joining and everyday steps, with separate tabs for Android and iPhone. It opens on the right one for the phone.
 - **List** shows the nearest places first once you tap *📍 Nearest first* and allow location. Visited ones sink to the bottom.
 - **Map** shows every place as a coloured pin, and you as a blue dot. Tap a pin for its card.
 - **Go** opens Google Maps with directions. The square arrow button opens the place's Google Maps page (hours, reviews, photos).
