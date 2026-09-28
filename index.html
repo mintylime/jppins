@@ -24,6 +24,7 @@
   --accent: #D9480F; --accent-ink: #fff; --soft: #EFE7D8; --ok: #2F7D4F; --warn: #A15C00;
   --eat: #D9480F; --drink: #7B3FA0; --see: #1F6F8B; --shop: #B07D00; --outdoors: #2F7D4F; --other: #6B6257;
   --shadow: 0 1px 2px rgba(60,40,10,.06), 0 4px 14px rgba(60,40,10,.06);
+  --today-bg: #EAEAFB; --today-card: #FAFAFF; --today-line: #D3D2F2; --today-accent: #4A47C7;
   --display: "Fraunces", Georgia, "Times New Roman", serif;
   --body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   color-scheme: light;
@@ -34,6 +35,7 @@
     --accent: #F0692E; --soft: #2A251F; --ok: #5DBB84; --warn: #E0A04A;
     --eat: #F0692E; --drink: #B37ADB; --see: #4FA8C7; --shop: #D9A92E; --outdoors: #5DBB84; --other: #A89F92;
     --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 14px rgba(0,0,0,.25);
+    --today-bg: #191A30; --today-card: #232447; --today-line: #383A66; --today-accent: #9694F0;
     color-scheme: dark;
   }
 }
@@ -41,6 +43,7 @@
   --bg: #16130F; --card: #211D18; --ink: #F3EDE3; --muted: #A89F92; --line: #332D26;
   --accent: #F0692E; --soft: #2A251F; --ok: #5DBB84; --warn: #E0A04A;
   --eat: #F0692E; --drink: #B37ADB; --see: #4FA8C7; --shop: #D9A92E; --outdoors: #5DBB84; --other: #A89F92;
+  --today-bg: #191A30; --today-card: #232447; --today-line: #383A66; --today-accent: #9694F0;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -81,6 +84,9 @@ a { color: inherit; }
   font-weight: 600; font-size: 15px; color: var(--muted);
 }
 .seg button[aria-selected="true"] { background: var(--card); color: var(--ink); box-shadow: var(--shadow); }
+.seg button .n { margin-left: 4px; font-size: 12px; opacity: .7; }
+.seg.today-seg { background: var(--today-line); }
+.seg.today-seg button[aria-selected="true"] { background: var(--today-card); }
 
 .chips {
   display: flex; gap: 6px; overflow-x: auto; padding: 10px 16px 10px; margin: 0 -16px;
@@ -97,11 +103,24 @@ a { color: inherit; }
 
 /* ---------- list ---------- */
 main { padding: 4px 16px calc(env(safe-area-inset-bottom) + 96px); }
-#mapView { display: none; }
+#mapView, #todayView { display: none; }
 body.show-map main { padding: 0; }
 body.show-map #listView { display: none; }
 body.show-map #mapView { display: block; }
 body.show-map .chips { padding-bottom: 8px; }
+body.show-today #listView, body.show-today #mapView { display: none; }
+body.show-today #todayView { display: block; }
+body.show-today .chips { display: none; }
+body.show-today main { padding: 0; }
+#todayView { background: var(--today-bg); border-radius: 18px 18px 0 0; min-height: calc(100dvh - var(--topH, 170px)); }
+#todayControls { padding: 10px 16px 0; }
+#todayListWrap { padding: 0 16px calc(env(safe-area-inset-bottom) + 96px); }
+#todayMapWrap { display: none; position: relative; }
+body.show-today.today-map #todayMapWrap { display: block; }
+body.show-today.today-map #todayListWrap { display: none; }
+.today-bar { display: flex; align-items: center; gap: 8px; padding: 10px 0 6px; }
+.today-bar .hint { flex: 1; color: var(--muted); font-size: 13px; }
+#todayView .card, #todayPeek .card { background: var(--today-card); border-color: var(--today-line); }
 
 .card {
   background: var(--card); border: 1px solid var(--line); border-radius: 16px;
@@ -112,6 +131,13 @@ body.show-map .chips { padding-bottom: 8px; }
 .card.been h3 { text-decoration: line-through; text-decoration-thickness: 1.5px; }
 .card-head { display: flex; gap: 8px; align-items: baseline; }
 .card h3 { font: 600 19px/1.2 var(--display); margin: 0; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.star {
+  flex: none; border: 0; background: transparent; padding: 2px; margin-top: 1px;
+  color: var(--muted); align-self: flex-start;
+}
+.star svg { width: 20px; height: 20px; display: block; }
+.star[aria-pressed="true"] { color: var(--today-accent); }
+.star[aria-pressed="true"] svg { fill: var(--today-accent); }
 .dist { font-size: 13px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .cat-tag { font-size: 12px; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; color: var(--c); margin: 0 0 4px; }
 .about { margin: 4px 0 0; font-size: 14px; color: var(--muted); }
@@ -170,6 +196,13 @@ body.show-map .chips { padding-bottom: 8px; }
 #peek .card { margin: 0; box-shadow: 0 8px 30px rgba(0,0,0,.25); }
 body.show-map #fab { bottom: calc(env(safe-area-inset-bottom) + 16px); }
 body.show-map.peeking #fab { display: none; }
+#todayMap { height: calc(100dvh - var(--topH, 170px) - var(--todayBarH, 0px)); width: 100%; background: var(--today-line); }
+#todayPeek {
+  position: absolute; left: 10px; right: 10px; bottom: calc(env(safe-area-inset-bottom) + 12px); z-index: 460;
+  display: none;
+}
+#todayPeek.open { display: block; }
+#todayPeek .card { margin: 0; box-shadow: 0 8px 30px rgba(0,0,0,.25); }
 .leaflet-container { font: inherit; }
 .leaflet-control-attribution { font-size: 10px; }
 
@@ -290,6 +323,7 @@ details.more summary { font-size: 14px; color: var(--muted); cursor: pointer; }
   <div class="seg" role="tablist">
     <button role="tab" id="tabList" aria-selected="true">List</button>
     <button role="tab" id="tabMap" aria-selected="false">Map</button>
+    <button role="tab" id="tabToday" aria-selected="false">Today<span class="n" id="todayN" hidden>0</span></button>
   </div>
   <div class="chips" id="chips"></div>
 </header>
@@ -307,6 +341,31 @@ details.more summary { font-size: 14px; color: var(--muted); cursor: pointer; }
       </button>
     </div>
     <div id="peek"></div>
+  </section>
+  <section id="todayView">
+    <div id="todayControls">
+      <div class="seg today-seg" role="tablist" aria-label="Today view">
+        <button role="tab" id="todayTabList" aria-selected="true">List</button>
+        <button role="tab" id="todayTabMap" aria-selected="false">Map</button>
+      </div>
+      <div class="today-bar">
+        <span class="hint" id="todayEmpty"></span>
+        <button type="button" class="btn danger" id="clearTodayBtn" data-clear-today hidden>Clear day</button>
+      </div>
+    </div>
+    <div id="todayListWrap"><div id="todayList"></div></div>
+    <div id="todayMapWrap">
+      <div id="todayMap"></div>
+      <div class="map-ctrls">
+        <button class="icon-btn" id="todayLocBtn" aria-label="Show where I am">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+        </button>
+        <button class="icon-btn" id="todayFitBtn" aria-label="Show today's places">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+        </button>
+      </div>
+      <div id="todayPeek"></div>
+    </div>
   </section>
 </main>
 
@@ -508,6 +567,7 @@ const ICON = {
   map: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>',
   check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>',
   edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
+  star: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l2.6 5.6 6 .7-4.4 4.2 1.2 6-5.4-3-5.4 3 1.2-6-4.4-4.2 6-.7z"/></svg>',
 };
 const DEMO_ITEMS = [
   { id: 'd1', name: 'Kuromon Ichiba Market', category: 'eat', about: 'Covered food market, 170-odd stalls', why: 'Grilled scallops and tuna skewers. Go before 11, it gets packed.', address: 'Nipponbashi, Chuo Ward, Osaka', lat: 34.6654, lng: 135.5066 },
@@ -546,6 +606,16 @@ let items = store.get(cfg.demo ? 'demoItems' : 'items', []);
 let filter = 'all';
 let hideBeen = store.get('hideBeen', false);
 let view = 'list';
+let todayInner = store.get('todayInner', 'list');   // 'list' | 'map', inside the Today tab
+// Today is a personal, on-this-phone shortlist pulled from the shared list. It never syncs.
+const todayIds = new Set(store.get('today', []));
+function isToday(p) { return todayIds.has(p.id); }
+function saveTodayIds() { store.set('today', [...todayIds]); }
+function toggleToday(p) {
+  if (todayIds.has(p.id)) todayIds.delete(p.id); else todayIds.add(p.id);
+  saveTodayIds();
+}
+function todayVisible() { return sortByDistanceThenAdded(items.filter(isToday)); }
 let pos = null;               // {lat, lng}
 let lastSync = store.get('lastSync', null);
 let offline = false;
@@ -712,7 +782,9 @@ function upsert(item) {
 function dropLocal(id) {
   items = items.filter(x => x.id !== id);
   store.set(cfg.demo ? 'demoItems' : 'items', items);
-  if ($('#peek').dataset.id === id) hidePeek();
+  if (todayIds.delete(id)) saveTodayIds();
+  if ($('#peek').dataset.id === id) hidePeek(mainScope);
+  if ($('#todayPeek').dataset.id === id) hidePeek(todayScope);
 }
 function goneElsewhere(id) {
   dropLocal(id); render(); toast('That place was deleted on another phone');
@@ -764,9 +836,8 @@ function infoUrl(p) {
 }
 
 // ---------------------------------------------------------------- rendering
-function visible() {
-  let list = items.filter(p => (filter === 'all' || catOf(p) === filter) && !(hideBeen && p.been));
-  list.sort((a, b) => {
+function sortByDistanceThenAdded(list) {
+  return list.slice().sort((a, b) => {
     if (!!a.been !== !!b.been) return a.been ? 1 : -1;
     if (pos) {
       const da = hasPin(a) ? metres(pos, a) : 1e12, db = hasPin(b) ? metres(pos, b) : 1e12;
@@ -774,15 +845,21 @@ function visible() {
     }
     return String(b.added || b.id).localeCompare(String(a.added || a.id));
   });
-  return list;
+}
+function visible() {
+  return sortByDistanceThenAdded(items.filter(p => (filter === 'all' || catOf(p) === filter) && !(hideBeen && p.been)));
 }
 
 function cardHTML(p) {
   const c = catOf(p);
   const dist = distLabel(p);
+  const inToday = isToday(p);
   return `<article class="card cat-${c}${p.been ? ' been' : ''}" data-id="${esc(p.id)}">
     <p class="cat-tag">${CATS[c].emoji} ${CATS[c].label}</p>
-    <div class="card-head"><h3>${esc(p.name || 'Untitled')}</h3>${dist ? `<span class="dist">${esc(dist)}</span>` : ''}</div>
+    <div class="card-head">
+      <button type="button" class="star" data-act="today" aria-pressed="${inToday}" aria-label="${inToday ? 'Remove from Today' : 'Add to Today'}">${ICON.star}</button>
+      <h3>${esc(p.name || 'Untitled')}</h3>${dist ? `<span class="dist">${esc(dist)}</span>` : ''}
+    </div>
     ${p.about ? `<p class="about">${esc(p.about)}</p>` : ''}
     ${p.why ? `<p class="why">${esc(p.why)}</p>` : ''}
     ${hasPin(p) ? (p.address ? `<p class="addr">${esc(p.address)}</p>` : '')
@@ -828,7 +905,7 @@ function render() {
   $('#tripTitle').textContent = tripName() || 'Trip Pins';
   document.title = tripName() ? `${tripName()} · Trip Pins` : 'Trip Pins';
   const setUp = !!(cfg.url || cfg.demo);
-  $('#fab').hidden = !setUp; $('#chips').hidden = !setUp; $('#sub').hidden = !setUp;
+  $('#fab').hidden = !setUp || view === 'today'; $('#chips').hidden = !setUp; $('#sub').hidden = !setUp;
   renderSub(); renderChips();
   const list = visible();
   const el = $('#list');
@@ -850,9 +927,25 @@ function render() {
   } else {
     el.innerHTML = list.map(cardHTML).join('');
   }
-  if (map) drawMarkers();
+  if (mainScope.map) drawMarkers(mainScope);
   const peekId = $('#peek').dataset.id;
-  if (peekId) { const p = items.find(x => x.id === peekId); p ? showPeek(p) : hidePeek(); }
+  if (peekId) { const p = items.find(x => x.id === peekId); p ? showPeek(mainScope, p) : hidePeek(mainScope); }
+  $('#tabToday').setAttribute('aria-selected', view === 'today');
+  renderToday();
+}
+
+function renderToday() {
+  const n = todayIds.size;
+  const badge = $('#todayN');
+  badge.textContent = n; badge.hidden = !n;
+  $('#clearTodayBtn').hidden = !n;
+  const list = todayVisible();
+  const el = $('#todayList');
+  $('#todayEmpty').textContent = n ? '' : 'Nothing here yet. Tap the star on any place to plan it for today.';
+  el.innerHTML = list.map(cardHTML).join('');
+  if (todayScope.map) drawMarkers(todayScope);
+  const peekId = $('#todayPeek').dataset.id;
+  if (peekId) { const p = items.find(x => x.id === peekId); p ? showPeek(todayScope, p) : hidePeek(todayScope); }
 }
 
 // ---------------------------------------------------------------- location
@@ -865,7 +958,7 @@ function startLocating(prompted) {
     store.set('locOk', true);
     if (first) { render(); if (prompted) toast('Sorted by distance'); }
     else throttledRender();
-    if (map) drawMe();
+    drawMe(mainScope); drawMe(todayScope);
   }, err => {
     watchId = null;
     if (prompted) toast(err.code === 1 ? 'Location is blocked for this site in your browser settings' : 'Couldn’t get your location');
@@ -878,75 +971,105 @@ function throttledRender() {
 }
 
 // ---------------------------------------------------------------- map
-let map = null, markerLayer = null, meMarker = null, markers = {};
-function ensureMap() {
-  if (map || !window.L) return !!map;
-  map = L.map('map', { zoomControl: false, attributionControl: true }).setView([34.6873, 135.5262], 13);
+// Two independent map scopes share the same drawing logic: the main map
+// (all places) and the Today map (just the day's shortlist).
+function makeScope(mapId, peekId, itemsFn) {
+  return { mapId, peekId, itemsFn, map: null, layer: null, me: null, markers: {} };
+}
+const mainScope = makeScope('map', 'peek', visible);
+const todayScope = makeScope('todayMap', 'todayPeek', todayVisible);
+
+function ensureMap(scope) {
+  if (scope.map || !window.L) return !!scope.map;
+  scope.map = L.map(scope.mapId, { zoomControl: false, attributionControl: true }).setView([34.6873, 135.5262], 13);
   // OpenStreetMap's own tiles: free, no key or account needed.
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-  }).addTo(map);
-  markerLayer = L.layerGroup().addTo(map);
-  map.on('click', hidePeek);
-  drawMarkers(); drawMe(); fitAll(false);
+  }).addTo(scope.map);
+  scope.layer = L.layerGroup().addTo(scope.map);
+  scope.map.on('click', () => hidePeek(scope));
+  drawMarkers(scope); drawMe(scope); fitAll(scope, false);
   return true;
 }
-function drawMarkers() {
-  if (!markerLayer) return;
-  markerLayer.clearLayers(); markers = {};
-  const sel = $('#peek').dataset.id;
-  visible().filter(hasPin).forEach(p => {
+function drawMarkers(scope) {
+  if (!scope.layer) return;
+  scope.layer.clearLayers(); scope.markers = {};
+  const sel = $('#' + scope.peekId).dataset.id;
+  scope.itemsFn().filter(hasPin).forEach(p => {
     const c = catOf(p);
     const icon = L.divIcon({
       className: '', iconSize: [34, 34], iconAnchor: [17, 41],
       html: `<div class="pin cat-${c}${p.been ? ' been' : ''}${sel === p.id ? ' sel' : ''}"><span>${CATS[c].emoji}</span></div>`,
     });
     const m = L.marker([p.lat, p.lng], { icon, title: p.name, riseOnHover: true })
-      .on('click', e => { L.DomEvent.stopPropagation(e); showPeek(p); drawMarkers(); })
-      .addTo(markerLayer);
-    markers[p.id] = m;
+      .on('click', e => { L.DomEvent.stopPropagation(e); showPeek(scope, p); drawMarkers(scope); })
+      .addTo(scope.layer);
+    scope.markers[p.id] = m;
   });
 }
-function drawMe() {
-  if (!map || !pos) return;
-  if (!meMarker) meMarker = L.marker([pos.lat, pos.lng], { icon: L.divIcon({ className: '', html: '<div class="me"></div>', iconSize: [18, 18], iconAnchor: [9, 9] }), interactive: false, zIndexOffset: -100 }).addTo(map);
-  else meMarker.setLatLng([pos.lat, pos.lng]);
+function drawMe(scope) {
+  if (!scope.map || !pos) return;
+  if (!scope.me) scope.me = L.marker([pos.lat, pos.lng], { icon: L.divIcon({ className: '', html: '<div class="me"></div>', iconSize: [18, 18], iconAnchor: [9, 9] }), interactive: false, zIndexOffset: -100 }).addTo(scope.map);
+  else scope.me.setLatLng([pos.lat, pos.lng]);
 }
-function fitAll(animate = true) {
-  if (!map) return;
-  const pts = visible().filter(hasPin).map(p => [p.lat, p.lng]);
+function fitAll(scope, animate = true) {
+  if (!scope.map) return;
+  const pts = scope.itemsFn().filter(hasPin).map(p => [p.lat, p.lng]);
   if (pos) {
     // Keep the view local: only places within 30 km of you, plus you.
-    const near = visible().filter(p => hasPin(p) && metres(pos, p) < 30000).map(p => [p.lat, p.lng]);
-    if (near.length) { map.fitBounds(L.latLngBounds(near.concat([[pos.lat, pos.lng]])), { padding: [50, 50], maxZoom: 16, animate }); return; }
+    const near = scope.itemsFn().filter(p => hasPin(p) && metres(pos, p) < 30000).map(p => [p.lat, p.lng]);
+    if (near.length) { scope.map.fitBounds(L.latLngBounds(near.concat([[pos.lat, pos.lng]])), { padding: [50, 50], maxZoom: 16, animate }); return; }
   }
-  if (pts.length) map.fitBounds(L.latLngBounds(pts), { padding: [50, 50], maxZoom: 16, animate });
-  else if (pos) map.setView([pos.lat, pos.lng], 15, { animate });
+  if (pts.length) scope.map.fitBounds(L.latLngBounds(pts), { padding: [50, 50], maxZoom: 16, animate });
+  else if (pos) scope.map.setView([pos.lat, pos.lng], 15, { animate });
 }
-function showPeek(p) {
-  const pk = $('#peek'); pk.dataset.id = p.id; pk.innerHTML = cardHTML(p); pk.classList.add('open');
+function showPeek(scope, p) {
+  const pk = $('#' + scope.peekId); pk.dataset.id = p.id; pk.innerHTML = cardHTML(p); pk.classList.add('open');
   document.body.classList.add('peeking');
 }
-function hidePeek() {
-  const pk = $('#peek'); if (!pk.dataset.id) return;
+function hidePeek(scope) {
+  const pk = $('#' + scope.peekId); if (!pk.dataset.id) return;
   delete pk.dataset.id; pk.classList.remove('open'); pk.innerHTML = '';
-  document.body.classList.remove('peeking'); drawMarkers();
+  document.body.classList.remove('peeking'); drawMarkers(scope);
 }
-function setTopH() { document.documentElement.style.setProperty('--topH', $('#top').offsetHeight + 'px'); }
+function setTopH() {
+  document.documentElement.style.setProperty('--topH', $('#top').offsetHeight + 'px');
+  const bar = $('#todayControls');
+  document.documentElement.style.setProperty('--todayBarH', (view === 'today' && bar) ? bar.offsetHeight + 'px' : '0px');
+}
 
 function setView(v) {
   view = v;
   document.body.classList.toggle('show-map', v === 'map');
+  document.body.classList.toggle('show-today', v === 'today');
   $('#tabList').setAttribute('aria-selected', v === 'list');
   $('#tabMap').setAttribute('aria-selected', v === 'map');
+  $('#tabToday').setAttribute('aria-selected', v === 'today');
+  // New places are only ever added to the shared list; Today is just a
+  // favourite flag on top of it, so there's no "add" entry point here.
+  $('#fab').hidden = v === 'today' || !(cfg.url || cfg.demo);
   if (v === 'map') {
     setTopH();
-    if (!ensureMap()) {
+    if (!ensureMap(mainScope)) {
       // Leaflet still loading: try again shortly.
-      const t = setInterval(() => { if (window.L) { clearInterval(t); ensureMap(); } }, 200);
-    } else setTimeout(() => map.invalidateSize(), 0);
-  } else hidePeek();
+      const t = setInterval(() => { if (window.L) { clearInterval(t); ensureMap(mainScope); } }, 200);
+    } else setTimeout(() => mainScope.map.invalidateSize(), 0);
+  } else hidePeek(mainScope);
+  if (v === 'today') { setTopH(); renderToday(); setTodayInner(todayInner); } else hidePeek(todayScope);
+}
+
+function setTodayInner(v) {
+  todayInner = v; store.set('todayInner', v);
+  document.body.classList.toggle('today-map', v === 'map');
+  $('#todayTabList').setAttribute('aria-selected', v === 'list');
+  $('#todayTabMap').setAttribute('aria-selected', v === 'map');
+  if (v === 'map' && view === 'today') {
+    setTopH();
+    if (!ensureMap(todayScope)) {
+      const t = setInterval(() => { if (window.L) { clearInterval(t); ensureMap(todayScope); } }, 200);
+    } else setTimeout(() => todayScope.map.invalidateSize(), 0);
+  } else hidePeek(todayScope);
 }
 
 // ---------------------------------------------------------------- add / edit sheet
@@ -1111,6 +1234,22 @@ function deletePlace() {
   removePlace(p);
 }
 function resetDel() { const b = $('#delBtn'); b.classList.remove('armed'); b.textContent = 'Delete'; }
+
+// ---------------------------------------------------------------- today
+let clearTodayTimer;
+function resetClearToday() { const b = $('#clearTodayBtn'); b.classList.remove('armed'); b.textContent = 'Clear day'; }
+function clearTodayTap() {
+  const b = $('#clearTodayBtn');
+  if (!b.classList.contains('armed')) {
+    b.classList.add('armed'); b.textContent = 'Tap again to clear';
+    clearTimeout(clearTodayTimer); clearTodayTimer = setTimeout(resetClearToday, 4000);
+    return;
+  }
+  resetClearToday();
+  todayIds.clear(); saveTodayIds();
+  render();
+  toast('Today cleared');
+}
 
 // ---------------------------------------------------------------- settings
 const setSheet = $('#setSheet');
@@ -1289,18 +1428,22 @@ document.addEventListener('click', e => {
     navigator.clipboard.writeText(v).then(() => toast('Copied')).catch(() => prompt('Copy:', v));
     return;
   }
-  if (t.dataset.f) { filter = t.dataset.f; hidePeek(); render(); if (map) fitAll(); return; }
+  if (t.dataset.f) { filter = t.dataset.f; hidePeek(mainScope); render(); if (mainScope.map) fitAll(mainScope); return; }
   if (t.hasAttribute('data-hide')) { hideBeen = !hideBeen; store.set('hideBeen', hideBeen); render(); return; }
   if (t.hasAttribute('data-near')) { startLocating(true); return; }
+  if (t.hasAttribute('data-clear-today')) { clearTodayTap(); return; }
   if (t.dataset.cat) { chosenCat = t.dataset.cat; catButtons(chosenCat); return; }
   const card = t.closest('.card'); if (!card) return;
   const p = items.find(x => x.id === card.dataset.id); if (!p) return;
   const act = t.dataset.act;
+  const inToday = !!card.closest('#todayView');
   if (act === 'edit') openEdit(p);
   else if (act === 'been') toggleBeen(p);
+  else if (act === 'today') { toggleToday(p); render(); }
   else if (act === 'map') {
-    setView('map');
-    const go = () => { if (!map) return setTimeout(go, 150); map.setView([p.lat, p.lng], 16); showPeek(p); drawMarkers(); };
+    const scope = inToday ? todayScope : mainScope;
+    if (inToday) { setView('today'); setTodayInner('map'); } else setView('map');
+    const go = () => { if (!scope.map) return setTimeout(go, 150); scope.map.setView([p.lat, p.lng], 16); showPeek(scope, p); drawMarkers(scope); };
     go();
   }
 });
@@ -1309,6 +1452,11 @@ document.querySelectorAll('dialog.sheet').forEach(d => d.addEventListener('click
 
 $('#tabList').onclick = () => setView('list');
 $('#tabMap').onclick = () => setView('map');
+$('#tabToday').onclick = () => setView('today');
+$('#todayTabList').onclick = () => setTodayInner('list');
+$('#todayTabMap').onclick = () => setTodayInner('map');
+$('#todayFitBtn').onclick = () => fitAll(todayScope);
+$('#todayLocBtn').onclick = () => { if (pos && todayScope.map) todayScope.map.setView([pos.lat, pos.lng], 16); else startLocating(true); };
 $('#fab').onclick = () => openAdd('');
 $('#settingsBtn').onclick = openSettings;
 
@@ -1326,8 +1474,8 @@ $('#helpBtn').onclick = () => {
   helpSheet.scrollTop = 0;
 };
 $('#syncBtn').onclick = () => refresh(false);
-$('#fitBtn').onclick = () => fitAll();
-$('#locBtn').onclick = () => { if (pos && map) map.setView([pos.lat, pos.lng], 16); else startLocating(true); };
+$('#fitBtn').onclick = () => fitAll(mainScope);
+$('#locBtn').onclick = () => { if (pos && mainScope.map) mainScope.map.setView([pos.lat, pos.lng], 16); else startLocating(true); };
 $('#placeForm').addEventListener('submit', savePlace);
 $('#connForm').addEventListener('submit', submitConnect);
 $('#tripForm').addEventListener('submit', submitTrip);
@@ -1363,7 +1511,10 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) refr
 setInterval(() => {
   if (!document.hidden && !document.querySelector('dialog[open]') && navigator.onLine) refresh(true);
 }, 90000);
-window.addEventListener('resize', () => { if (view === 'map') { setTopH(); map && map.invalidateSize(); } });
+window.addEventListener('resize', () => {
+  if (view === 'map') { setTopH(); mainScope.map && mainScope.map.invalidateSize(); }
+  else if (view === 'today') { setTopH(); if (todayInner === 'map') todayScope.map && todayScope.map.invalidateSize(); }
+});
 
 // ---------------------------------------------------------------- start
 render();
