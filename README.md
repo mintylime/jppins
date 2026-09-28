@@ -193,6 +193,6 @@ Google sometimes changes the shape of its links. When a lookup misses, the place
 | `manifest.webmanifest` | Lets phones install it, and puts it in Android's share sheet |
 | `sw.js` | Offline support |
 | `icon-*.png`, `apple-touch-icon.png` | Home-screen icons |
-| `Code.gs` | The Google Sheet backend (goes in Apps Script, not GitHub) |
+| `Code.gs` | The Google Sheet backend. It runs in Apps Script; the copy here is for reference and holds no key |
 
 The map uses Leaflet (the free map library) with OpenStreetMap's own tiles, and neither needs a key or an account. Map data © OpenStreetMap contributors.
