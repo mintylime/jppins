@@ -187,6 +187,7 @@ body.show-today.today-map #todayListWrap { display: none; }
 .pin span { transform: rotate(45deg); font-size: 16px; line-height: 1; }
 .pin.been { filter: grayscale(1); opacity: .6; }
 .pin.sel { outline: 3px solid var(--ink); outline-offset: 1px; }
+.pin.ghost { opacity: .22; filter: grayscale(1); box-shadow: none; transform: rotate(-45deg) scale(.75); }
 .me { width: 18px; height: 18px; border-radius: 50%; background: #1A73E8; border: 3px solid #fff; box-shadow: 0 0 0 6px rgba(26,115,232,.2), 0 1px 4px rgba(0,0,0,.4); }
 #peek {
   position: absolute; left: 10px; right: 10px; bottom: calc(env(safe-area-inset-bottom) + 12px); z-index: 460;
@@ -1000,9 +1001,10 @@ function drawMarkers(scope) {
     const c = catOf(p);
     const icon = L.divIcon({
       className: '', iconSize: [34, 34], iconAnchor: [17, 41],
-      html: `<div class="pin cat-${c}${p.been ? ' been' : ''}${sel === p.id ? ' sel' : ''}"><span>${CATS[c].emoji}</span></div>`,
+      html: `<div class="pin cat-${c}${p.been ? ' been' : ''}${sel === p.id ? ' sel' : sel ? ' ghost' : ''}"><span>${CATS[c].emoji}</span></div>`,
     });
-    const m = L.marker([p.lat, p.lng], { icon, title: p.name, riseOnHover: true })
+    // With one place in focus, the rest fade back; tapping a faded pin focuses that one instead.
+    const m = L.marker([p.lat, p.lng], { icon, title: p.name, riseOnHover: true, zIndexOffset: sel === p.id ? 1000 : 0 })
       .on('click', e => { L.DomEvent.stopPropagation(e); showPeek(scope, p); drawMarkers(scope); })
       .addTo(scope.layer);
     scope.markers[p.id] = m;
