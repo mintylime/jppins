@@ -163,8 +163,14 @@ body.show-plan .chips { display: none; }
 .mv svg { width: 16px; height: 16px; }
 .mv:disabled { opacity: .3; }
 .empty-day { margin: 6px 0 2px; font-size: 13px; color: var(--muted); }
-details.unplanned summary { font: 600 16px/1.2 var(--display); cursor: pointer; padding: 6px 0; }
-details.unplanned summary .n { font: 13px var(--body); color: var(--muted); margin-left: 4px; }
+details.unplanned summary, details.past-days summary { font: 600 16px/1.2 var(--display); cursor: pointer; padding: 6px 0; }
+details.unplanned summary .n, details.past-days summary .n { font: 13px var(--body); color: var(--muted); margin-left: 6px; }
+details.past-days { background: var(--soft); box-shadow: none; }
+.past-day { margin-top: 8px; }
+.past-day h4 { display: flex; align-items: center; justify-content: space-between; font: 600 14px/1.2 var(--body); color: var(--muted); margin: 4px 0 2px; }
+.prow .num.done { background: var(--ok); }
+.prow .num.miss { background: var(--warn); }
+.prow.missed .pname { color: var(--warn); }
 .cat-row { display: flex; align-items: center; gap: 8px; margin: 0 0 4px; }
 .cat-row .cat-tag { margin: 0; flex: 1; }
 .daychip {
@@ -172,12 +178,20 @@ details.unplanned summary .n { font: 13px var(--body); color: var(--muted); marg
   padding: 3px 10px; font-size: 12px; font-weight: 600; color: var(--muted);
 }
 .daychip.set { background: var(--card); color: var(--ink); border-color: var(--today-accent); }
+.daychip.missed { background: var(--card); color: var(--warn); border-color: var(--warn); }
+.daychip.done { color: var(--ok); }
 .daypick { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
 .daypick .btn { justify-content: space-between; height: 46px; font-size: 15px; }
 .daypick .btn[aria-pressed="true"] { border: 2px solid var(--today-accent); }
 .daypick .btn .n { color: var(--muted); font-weight: 400; font-size: 13px; }
 .pin.num span { font: 700 14px/1 var(--body); color: #fff; }
-.chip.plan[aria-pressed="true"] { background: var(--today-accent); border-color: var(--today-accent); color: #fff; }
+.chip.plan { position: relative; }
+.chip.plan.on { background: var(--today-accent); border-color: var(--today-accent); color: #fff; }
+/* The real <select> sits invisibly over the chip, so a tap opens the phone's picker. */
+.chip.select select { position: absolute; inset: 0; width: 100%; opacity: 0; font-size: 16px; cursor: pointer; }
+.chip.near { border-style: dashed; }
+.hidden-note { text-align: center; font-size: 13px; color: var(--muted); margin: 6px 0 0; }
+.linkish { border: 0; background: none; padding: 4px; color: var(--accent); font-weight: 600; font-size: 13px; }
 
 .card {
   background: var(--card); border: 1px solid var(--line); border-radius: 16px;
@@ -554,7 +568,8 @@ details.more summary { font-size: 14px; color: var(--muted); cursor: pointer; }
     <h3 class="sec">4. Using the shared list</h3>
     <ul>
       <li><b>Go</b> opens Google Maps with directions to that spot.</li>
-      <li><b>List</b>: tap <kbd>📍 Nearest first</kbd> (and allow location) when you're out on the trip. <b>Map</b> shows everyone's places as coloured pins, and you as a blue dot.</li>
+      <li><b>List</b>: tap <kbd>🧭 Nearest first</kbd> (and allow location) when you're out on the trip. <b>Map</b> shows everyone's places as coloured pins, and you as a blue dot.</li>
+      <li>Visited places are hidden in the List and faded on the Map. <kbd>✓ Show visited</kbd> brings them back.</li>
       <li><b>✓</b> marks a place as visited. The pencil fixes a name, a note or a typo.</li>
       <li>It's one live list. Anything you add, edit or tick shows on everyone else's phone too, within about a minute and a half.</li>
     </ul>
@@ -565,6 +580,8 @@ details.more summary { font-size: 14px; color: var(--muted); cursor: pointer; }
       <li>Tap <kbd>📅 Plan</kbd> on a place to put it on a day. The <b>Plan</b> tab shows every day; the arrows change the order.</li>
       <li><b>✨ Suggest days</b> spreads the places you haven't planned over the trip, grouped by area. Tap <b>Undo</b> if you don't like it.</li>
       <li>The route button sorts a day into a short walking order, starting from its first place. The pin button shows that day on the map, numbered.</li>
+      <li>The <kbd>📅 All days</kbd> chip above the List and Map picks one day to show, or the places not planned yet.</li>
+      <li>Days that have passed fold into <b>Past days</b>: ✓ for places you went, ! for ones you missed. Move a missed place with 📅, or let <b>Suggest days</b> fit it into the days left.</li>
       <li><b>My Today</b> is just for you. On a trip day it starts with that day's plan; tap the star on any place to add or remove it.</li>
       <li>The search box finds places by name or by what's in <i>Why go?</i>.</li>
     </ul>
@@ -729,6 +746,11 @@ function tripDays() {
 function dayOf(p) { tripDays(); return p.day && daysMemo.set.has(p.day) ? p.day : ''; }
 const byOrder = (a, b) => (a.dayOrder ?? 1e9) - (b.dayOrder ?? 1e9) || String(a.name).localeCompare(String(b.name));
 function dayItems(iso) { return items.filter(p => dayOf(p) === iso).sort(byOrder); }
+// Past days: the ones before today. A place left unvisited on a past day was missed.
+const isPastDay = d => d < todayISO();
+const missed = p => { const d = dayOf(p); return !!d && isPastDay(d) && !p.been; };
+// Days you can still plan: today onward, or every day once the trip is over.
+function openDays() { const t = todayISO(), all = tripDays(), left = all.filter(d => d >= t); return left.length ? left : all; }
 // "Wed 30 Sep": built by hand, since browsers disagree on commas and "Sept".
 function dayLabel(iso) {
   const d = new Date(iso + 'T12:00:00');
@@ -742,7 +764,8 @@ let items = store.get(cfg.demo ? 'demoItems' : 'items', []);
 let filter = 'all';
 let planFilter = '';           // '' | 'none' (not planned) | yyyy-mm-dd (one day, in route order)
 let query = '';                // search text
-let hideBeen = store.get('hideBeen', false);
+// Visited places are out of the way by default: hidden in the List, faded on the Map.
+let showVisited = store.get('showVisited', false);
 let view = 'list';
 let todayInner = store.get('todayInner', 'list');   // 'list' | 'map', inside the Today tab
 // Today is a personal, on-this-phone shortlist pulled from the shared list. It never syncs.
@@ -1018,22 +1041,32 @@ function matchesQuery(p) {
   const q = fold(query);
   return fold(p.name).includes(q) || fold(p.why).includes(q);
 }
-function visible() {
-  const list = items.filter(p => (filter === 'all' || catOf(p) === filter) && !(hideBeen && p.been) && matchesQuery(p));
+// The Map keeps visited places (faded); the List leaves them out unless Show visited is on.
+// A single day always shows everything on it, so a past day reads as a record.
+function visible(forMap) {
+  const oneDay = planOn() && planFilter && planFilter !== 'none';
+  const list = items.filter(p => (filter === 'all' || catOf(p) === filter) && (forMap || showVisited || oneDay || !p.been) && matchesQuery(p));
   if (planOn() && planFilter === 'none') return sortByDistanceThenAdded(list.filter(p => !dayOf(p)));
   if (planOn() && planFilter) return list.filter(p => dayOf(p) === planFilter).sort(byOrder);
   return sortByDistanceThenAdded(list);
 }
 // Showing one planned day: the map numbers its pins and draws the route.
 const dayRoute = () => planOn() && planFilter && planFilter !== 'none' ? planFilter : '';
+const faded = p => p.been && !showVisited && !dayRoute();
 
 function cardHTML(p) {
   const c = catOf(p);
   const dist = distLabel(p);
   const inToday = isToday(p);
   const pd = planOn() ? dayOf(p) : null;
-  const dayChip = pd == null ? ''
-    : `<button type="button" class="daychip${pd ? ' set' : ''}" data-act="plan" aria-label="${pd ? 'Planned for ' + esc(dayLabel(pd)) + '. Change day' : 'Add to a day in the plan'}">📅 ${pd ? esc(dayLabel(pd)) : 'Plan'}</button>`;
+  let dayChip = '';
+  if (pd === '') dayChip = '<button type="button" class="daychip" data-act="plan" aria-label="Add to a day in the plan">📅 Plan</button>';
+  else if (pd) {
+    const label = esc(dayLabel(pd));
+    dayChip = missed(p) ? `<button type="button" class="daychip missed" data-act="plan" aria-label="Missed on ${label}. Move to another day">Missed · ${label}</button>`
+      : p.been && isPastDay(pd) ? `<button type="button" class="daychip done" data-act="plan" aria-label="Visited on ${label}">✓ ${label}</button>`
+      : `<button type="button" class="daychip set" data-act="plan" aria-label="Planned for ${label}. Change day">📅 ${label}</button>`;
+  }
   return `<article class="card cat-${c}${p.been ? ' been' : ''}" data-id="${esc(p.id)}">
     <div class="cat-row"><p class="cat-tag">${CATS[c].emoji} ${CATS[c].label}</p>${dayChip}</div>
     <div class="card-head">
@@ -1054,25 +1087,33 @@ function cardHTML(p) {
   </article>`;
 }
 
+// One chip for the whole plan: it opens the phone's own picker, so a long trip
+// doesn't turn into a row of day chips.
+function daySelectHTML() {
+  const t = todayISO(), days = tripDays();
+  const up = days.filter(d => d >= t), past = days.filter(d => d < t);
+  const opt = (v, text) => `<option value="${v}"${planFilter === v ? ' selected' : ''}>${esc(text)}</option>`;
+  const dayOpt = d => opt(d, `${dayLabel(d)}${d === t ? ' · today' : ''} (${dayItems(d).length})`);
+  const group = (label, list) => list.length ? `<optgroup label="${label}">${list.map(dayOpt).join('')}</optgroup>` : '';
+  const options = opt('', 'All days') + opt('none', `Not planned (${items.filter(p => !dayOf(p)).length})`)
+    + (past.length ? group('Coming up', up) + group('Past days', past) : up.map(dayOpt).join(''));
+  const label = !planFilter ? 'All days' : planFilter === 'none' ? 'Not planned' : dayLabel(planFilter);
+  return `<label class="chip plan select${planFilter ? ' on' : ''}">📅 ${esc(label)} ▾<select id="dayPick" aria-label="Show one day of the plan">${options}</select></label>`;
+}
+
 function renderChips() {
-  const counts = { all: items.filter(p => !(hideBeen && p.been)).length };
-  items.forEach(p => { if (!(hideBeen && p.been)) counts[catOf(p)] = (counts[catOf(p)] || 0) + 1; });
+  const shown = p => showVisited || !p.been;
+  const counts = { all: items.filter(shown).length };
+  items.forEach(p => { if (shown(p)) counts[catOf(p)] = (counts[catOf(p)] || 0) + 1; });
   const beenCount = items.filter(p => p.been).length;
   let h = `<button class="chip" data-f="all" aria-pressed="${filter === 'all'}">All<span class="n">${counts.all}</span></button>`;
   for (const [k, v] of Object.entries(CATS)) {
     if (!counts[k] && filter !== k) continue;
     h += `<button class="chip" data-f="${k}" aria-pressed="${filter === k}">${v.emoji} ${v.label}<span class="n">${counts[k] || 0}</span></button>`;
   }
-  if (planOn()) {
-    const notPlanned = items.filter(p => !dayOf(p)).length;
-    h += `<button class="chip plan" data-pf="none" aria-pressed="${planFilter === 'none'}">Not planned<span class="n">${notPlanned}</span></button>`;
-    for (const d of tripDays()) {
-      const n = dayItems(d).length;
-      if (n || planFilter === d) h += `<button class="chip plan" data-pf="${d}" aria-pressed="${planFilter === d}">📅 ${esc(dayLabel(d))}<span class="n">${n}</span></button>`;
-    }
-  }
-  if (beenCount) h += `<button class="chip" data-hide aria-pressed="${hideBeen}">✓ Hide visited<span class="n">${beenCount}</span></button>`;
-  if (!pos && items.some(hasPin)) h += `<button class="chip" data-near>📍 Nearest first</button>`;
+  if (!pos && items.some(hasPin)) h += `<button class="chip near" data-near>🧭 Nearest first</button>`;
+  if (planOn()) h += daySelectHTML();
+  if (beenCount) h += `<button class="chip" data-visited aria-pressed="${showVisited}">✓ ${showVisited ? 'Hide' : 'Show'} visited<span class="n">${beenCount}</span></button>`;
   $('#chips').innerHTML = h;
 }
 
@@ -1112,11 +1153,13 @@ function render() {
     el.innerHTML = `<div class="empty"><h2>Nothing saved yet</h2>
       <p>Found somewhere good? In Google Maps tap <b>Share</b>, then pick Trip Pins (Android) or your Save Place shortcut (iPhone).</p>
       <p>Or tap <b>Add</b> and paste a link.</p></div>`;
-  } else if (!list.length) {
-    el.innerHTML = query ? `<div class="empty"><p>No places match “${esc(query)}”.</p></div>`
-      : `<div class="empty"><p>Nothing here with this filter.</p></div>`;
   } else {
-    el.innerHTML = list.map(cardHTML).join('');
+    // Say how many visited places are tucked away, so they're never lost.
+    const hidden = showVisited ? 0 : visible(true).filter(p => p.been && !list.includes(p)).length;
+    const note = hidden ? `<p class="hidden-note">${hidden} visited place${hidden === 1 ? '' : 's'} hidden. <button type="button" class="linkish" data-visited>Show</button></p>` : '';
+    el.innerHTML = (list.length ? list.map(cardHTML).join('')
+      : query ? `<div class="empty"><p>No places match “${esc(query)}”.</p></div>`
+      : `<div class="empty"><p>Nothing here with this filter.</p></div>`) + note;
   }
   if (mainScope.map) drawMarkers(mainScope);
   const peekId = $('#peek').dataset.id;
@@ -1172,7 +1215,7 @@ function throttledRender() {
 function makeScope(mapId, peekId, itemsFn) {
   return { mapId, peekId, itemsFn, map: null, layer: null, me: null, markers: {} };
 }
-const mainScope = makeScope('map', 'peek', visible);
+const mainScope = makeScope('map', 'peek', () => visible(true));
 const todayScope = makeScope('todayMap', 'todayPeek', todayVisible);
 
 function ensureMap(scope) {
@@ -1205,7 +1248,7 @@ function drawMarkers(scope) {
     const label = route ? all.indexOf(p) + 1 : CATS[c].emoji;
     const icon = L.divIcon({
       className: '', iconSize: [34, 34], iconAnchor: [17, 41],
-      html: `<div class="pin cat-${c}${route ? ' num' : ''}${p.been ? ' been' : ''}${sel === p.id ? ' sel' : sel ? ' ghost' : ''}"><span>${label}</span></div>`,
+      html: `<div class="pin cat-${c}${route ? ' num' : ''}${p.been ? ' been' : ''}${sel === p.id ? ' sel' : sel || faded(p) ? ' ghost' : ''}"><span>${label}</span></div>`,
     });
     // With one place in focus, the rest fade back; tapping a faded pin focuses that one instead.
     const m = L.marker([p.lat, p.lng], { icon, title: p.name, riseOnHover: true, zIndexOffset: sel === p.id ? 1000 : 0 })
@@ -1221,10 +1264,13 @@ function drawMe(scope) {
 }
 function fitAll(scope, animate = true) {
   if (!scope.map) return;
-  const pts = scope.itemsFn().filter(hasPin).map(p => [p.lat, p.lng]);
+  // Frame the places still to visit; faded ones only if nothing else is left.
+  let list = scope.itemsFn().filter(hasPin);
+  if (list.some(p => !faded(p))) list = list.filter(p => !faded(p));
+  const pts = list.map(p => [p.lat, p.lng]);
   if (pos) {
     // Keep the view local: only places within 30 km of you, plus you.
-    const near = scope.itemsFn().filter(p => hasPin(p) && metres(pos, p) < 30000).map(p => [p.lat, p.lng]);
+    const near = list.filter(p => metres(pos, p) < 30000).map(p => [p.lat, p.lng]);
     if (near.length) { scope.map.fitBounds(L.latLngBounds(near.concat([[pos.lat, pos.lng]])), { padding: [50, 50], maxZoom: 16, animate }); return; }
   }
   if (pts.length) scope.map.fitBounds(L.latLngBounds(pts), { padding: [50, 50], maxZoom: 16, animate });
@@ -1464,7 +1510,7 @@ function clearTodayTap() {
 // ---------------------------------------------------------------- plan
 // The plan is shared through the Sheet: each place carries the day it's planned for
 // and its place in that day's route.
-let openUnplanned = false;
+let openUnplanned = false, openPast = false;
 
 function renderPlan() {
   const el = $('#planDays'), hint = $('#planHint'), sug = $('#suggestBtn');
@@ -1479,17 +1525,37 @@ function renderPlan() {
     hint.textContent = 'Add your trip dates to start planning.';
     el.innerHTML = '<button type="button" class="btn primary wide" data-set-dates>Set trip dates</button>'; return;
   }
-  const unplanned = items.filter(p => !dayOf(p));
-  const planned = items.length - unplanned.length;
-  hint.textContent = `${days.length} day${days.length === 1 ? '' : 's'} · ${planned} planned · ${unplanned.length} not yet`;
-  sug.hidden = !unplanned.some(p => hasPin(p) && !p.been);
   const t = todayISO();
-  el.innerHTML = days.map(d => {
+  const past = days.filter(d => d < t), upcoming = days.filter(d => d >= t);
+  const unplanned = items.filter(p => !dayOf(p));
+  const missedList = items.filter(missed);
+  const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+  hint.textContent = !upcoming.length ? `The trip is over · ${plural(items.filter(p => p.been).length, 'place')} visited`
+    : [past.length ? `${plural(upcoming.length, 'day')} to go` : plural(days.length, 'day'),
+       `${items.length - unplanned.length - missedList.length} planned`, `${unplanned.length} not yet`,
+       missedList.length ? `${missedList.length} missed` : ''].filter(Boolean).join(' · ');
+  // Suggest fills the days still to come, with unplanned places and ones missed on past days.
+  sug.hidden = !upcoming.length || !items.some(p => hasPin(p) && !p.been && (!dayOf(p) || missed(p)));
+
+  const pastHTML = past.length ? (() => {
+    const onPast = past.flatMap(dayItems), done = onPast.filter(p => p.been).length;
+    return `<details class="day past-days"${openPast || !upcoming.length ? ' open' : ''}>
+      <summary>Past days<span class="n">${[plural(past.length, 'day'), done ? `${done} visited` : '', missedList.length ? `${missedList.length} missed` : ''].filter(Boolean).join(' · ')}</span></summary>
+      ${past.map(d => {
+        const list = dayItems(d);
+        return `<div class="past-day"><h4>${esc(dayLabel(d))}${list.some(hasPin) ? `<button type="button" class="linkish" data-daymap="${d}">Map</button>` : ''}</h4>
+          ${list.length ? `<ol class="prows">${list.map(p => prowHTML(p, 0, 0, true)).join('')}</ol>` : '<p class="empty-day">Nothing was planned.</p>'}</div>`;
+      }).join('')}
+      ${missedList.length && upcoming.length ? '<p class="empty-day">Missed something? Tap 📅 to move it to a day still to come, or use ✨ Suggest days.</p>' : ''}
+    </details>`;
+  })() : '';
+
+  el.innerHTML = pastHTML + upcoming.map(d => {
     const list = dayItems(d), label = esc(dayLabel(d));
     return `<section class="day${d === t ? ' is-today' : ''}" data-day="${d}">
       <header class="day-head">
         <h3>${label}${d === t ? '<span class="tag">Today</span>' : ''}</h3>
-        <span class="n">${list.length ? list.length + (list.length === 1 ? ' place' : ' places') : ''}</span>
+        <span class="n">${list.length ? plural(list.length, 'place') : ''}</span>
         ${list.filter(hasPin).length > 2 ? `<button type="button" class="btn sq sm" data-best="${d}" aria-label="Best order for ${label}">${ICON.route}</button>` : ''}
         ${list.some(hasPin) ? `<button type="button" class="btn sq sm" data-daymap="${d}" aria-label="Show ${label} on the map">${ICON.map}</button>` : ''}
       </header>
@@ -1502,15 +1568,18 @@ function renderPlan() {
     </details>` : '');
 }
 
-function prowHTML(p, i, n) {
+// A row in the plan. i < 0: not planned. past: a record of a past day (✓ visited, ! missed).
+function prowHTML(p, i, n, past) {
   const c = catOf(p);
-  const moves = i < 0
-    ? `<button type="button" class="mv" data-pick aria-label="Pick a day for ${esc(p.name)}">📅</button>`
+  const badge = past ? (p.been ? '<span class="num done">✓</span>' : '<span class="num miss">!</span>')
+    : `<span class="num${i < 0 ? ' emo' : ''}">${i < 0 ? CATS[c].emoji : i + 1}</span>`;
+  const moves = past ? (p.been ? '' : `<button type="button" class="mv" data-pick aria-label="Move ${esc(p.name)} to another day">📅</button>`)
+    : i < 0 ? `<button type="button" class="mv" data-pick aria-label="Pick a day for ${esc(p.name)}">📅</button>`
     : `<button type="button" class="mv" data-move="-1" aria-label="Move up"${i === 0 ? ' disabled' : ''}>${ICON.up}</button>
        <button type="button" class="mv" data-move="1" aria-label="Move down"${i === n - 1 ? ' disabled' : ''}>${ICON.down}</button>`;
-  return `<li class="prow cat-${c}${p.been ? ' been' : ''}" data-id="${esc(p.id)}">
-    <span class="num${i < 0 ? ' emo' : ''}">${i < 0 ? CATS[c].emoji : i + 1}</span>
-    <button type="button" class="pname" data-pick>${i < 0 ? '' : CATS[c].emoji + ' '}${esc(p.name || 'Untitled')}</button>
+  return `<li class="prow cat-${c}${p.been ? ' been' : ''}${past && !p.been ? ' missed' : ''}" data-id="${esc(p.id)}">
+    ${badge}
+    <button type="button" class="pname" data-pick>${i < 0 && !past ? '' : CATS[c].emoji + ' '}${esc(p.name || 'Untitled')}</button>
     ${moves}
   </li>`;
 }
@@ -1593,8 +1662,8 @@ function bestOrder(d) {
 // Group the unplanned pins into the trip's days by area, a similar number per day,
 // filling the emptiest days first. Visited places stay out.
 function suggestDays() {
-  const days = tripDays();
-  const pool = items.filter(p => !dayOf(p) && hasPin(p) && !p.been);
+  const t = todayISO(), days = tripDays().filter(d => d >= t);
+  const pool = items.filter(p => (!dayOf(p) || missed(p)) && hasPin(p) && !p.been);
   if (!days.length || !pool.length) return;
   const k = Math.min(days.length, pool.length);
   const mid = { lat: pool.reduce((s, p) => s + p.lat, 0) / pool.length, lng: pool.reduce((s, p) => s + p.lng, 0) / pool.length };
@@ -1637,7 +1706,10 @@ function openPlanPick(p) {
   pickId = p.id;
   const cur = dayOf(p), t = todayISO();
   $('#pickTitle').textContent = p.name || 'Plan';
-  $('#pickDays').innerHTML = tripDays().map(d => {
+  // Past days are done: offer today onward, and show a past day only as where it was.
+  const was = cur && isPastDay(cur) && openDays().indexOf(cur) < 0
+    ? `<button type="button" class="btn" disabled aria-pressed="true"><span>${esc(dayLabel(cur))}</span><span class="n">${p.been ? 'visited' : 'missed'}</span></button>` : '';
+  $('#pickDays').innerHTML = was + openDays().map(d => {
     const n = dayItems(d).length;
     return `<button type="button" class="btn" data-setday="${d}" aria-pressed="${cur === d}">
       <span>${esc(dayLabel(d))}${d === t ? ' · Today' : ''}</span><span class="n">${n ? n + (n === 1 ? ' place' : ' places') : ''}</span></button>`;
@@ -1839,15 +1911,15 @@ document.addEventListener('click', e => {
     return;
   }
   if (t.dataset.f) { filter = t.dataset.f; hidePeek(mainScope); render(); if (mainScope.map) fitAll(mainScope); return; }
-  if (t.hasAttribute('data-hide')) { hideBeen = !hideBeen; store.set('hideBeen', hideBeen); render(); return; }
+  if (t.hasAttribute('data-visited')) {
+    showVisited = !showVisited; store.set('showVisited', showVisited);
+    toast(showVisited ? 'Showing visited places' : 'Visited places hidden in the List, faded on the Map');
+    render(); return;
+  }
   if (t.hasAttribute('data-near')) { startLocating(true); return; }
   if (t.hasAttribute('data-clear-today')) { clearTodayTap(); return; }
   if (t.dataset.cat) { chosenCat = t.dataset.cat; catButtons(chosenCat); return; }
   // ----- plan
-  if (t.dataset.pf != null) {
-    planFilter = planFilter === t.dataset.pf ? '' : t.dataset.pf;
-    hidePeek(mainScope); render(); if (mainScope.map) fitAll(mainScope); return;
-  }
   if (t.hasAttribute('data-setday')) {
     const p = items.find(x => x.id === pickId);
     pickSheet.close(); if (p) setDay(p, t.dataset.setday); return;
@@ -1895,7 +1967,16 @@ $('#tabToday').onclick = () => setView('today');
 $('#tabPlan').onclick = () => setView('plan');
 $('#suggestBtn').onclick = suggestDays;
 $('#search').addEventListener('input', () => { query = $('#search').value.trim(); hidePeek(mainScope); render(); });
-document.addEventListener('toggle', e => { if (e.target.matches && e.target.matches('details.unplanned')) openUnplanned = e.target.open; }, true);
+document.addEventListener('change', e => {
+  if (e.target.id !== 'dayPick') return;
+  planFilter = e.target.value; hidePeek(mainScope); render();
+  if (mainScope.map) fitAll(mainScope);
+});
+document.addEventListener('toggle', e => {
+  if (!e.target.matches) return;
+  if (e.target.matches('details.unplanned')) openUnplanned = e.target.open;
+  if (e.target.matches('details.past-days')) openPast = e.target.open;
+}, true);
 $('#todayTabList').onclick = () => setTodayInner('list');
 $('#todayTabMap').onclick = () => setTodayInner('map');
 $('#todayFitBtn').onclick = () => fitAll(todayScope);
