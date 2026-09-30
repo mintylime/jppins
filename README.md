@@ -154,6 +154,15 @@ Two phones can save at exactly the same moment; the Sheet takes them one at a ti
 - **?** (next to the gear) shows the joining and everyday steps, with separate tabs for Android and iPhone. It opens on the right one for the phone.
 - **List** shows the nearest places first once you tap *📍 Nearest first* and allow location. Visited ones sink to the bottom.
 - **Map** shows every place as a coloured pin, and you as a blue dot. Tap a pin for its card.
+- **Search** (above the chips) finds places by name or by their *Why go?* note, ignoring accents: *yunagi* finds *Yūnagi*.
+- **Plan** turns the pins into a trip schedule that everyone on the Sheet shares:
+  - Set the first and last day in **Settings → This trip**.
+  - Tap **📅 Plan** on any card to put that place on a day. In the Plan tab, the arrows change a day's order.
+  - **✨ Suggest days** spreads the unplanned places over the trip, grouped by area and filling the emptiest days first. It skips visited places. **Undo** reverses it.
+  - The route button sorts a day into a short walking order from its first stop. The pin button shows that day on the map, numbered and joined up.
+  - The chips *Not planned* and *📅 Wed 14 Oct* filter the List and Map.
+  - The plan lives in two columns of the Sheet, **day** and **dayOrder**, added by the script the first time it runs.
+- **My Today** is your own shortlist, kept on your phone only. On a trip day it starts with that day's plan; the star on any card adds or removes a place, and **Clear day** empties it.
 - **Go** opens Google Maps with directions. The square arrow button opens the place's Google Maps page (hours, reviews, photos).
 - **✓** marks a place as visited. The chip *Hide visited* tidies the list.
 - **Edit** (pencil) changes anything. If a place has *No pin yet*, fix the name or area and tap **Find**.

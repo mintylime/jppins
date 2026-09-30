@@ -81,7 +81,7 @@ a { color: inherit; }
 .seg { display: flex; background: var(--soft); border-radius: 12px; padding: 3px; gap: 3px; }
 .seg button {
   flex: 1; border: 0; background: transparent; padding: 8px 0; border-radius: 9px;
-  font-weight: 600; font-size: 15px; color: var(--muted);
+  font-weight: 600; font-size: 14px; color: var(--muted); white-space: nowrap;
 }
 .seg button[aria-selected="true"] { background: var(--card); color: var(--ink); box-shadow: var(--shadow); }
 .seg button .n { margin-left: 4px; font-size: 12px; opacity: .7; }
@@ -121,6 +121,63 @@ body.show-today.today-map #todayListWrap { display: none; }
 .today-bar { display: flex; align-items: center; gap: 8px; padding: 10px 0 6px; }
 .today-bar .hint { flex: 1; color: var(--muted); font-size: 13px; }
 #todayView .card, #todayPeek .card { background: var(--today-card); border-color: var(--today-line); }
+
+/* ---------- search ---------- */
+.search { margin-top: 10px; padding: 9px 12px; font-size: 16px; }
+body.show-plan #searchBox, body.show-today #searchBox { display: none; }
+
+/* ---------- plan ---------- */
+#planView { display: none; }
+body.show-plan #listView, body.show-plan #mapView, body.show-plan #todayView { display: none; }
+body.show-plan #planView { display: block; }
+body.show-plan .chips { display: none; }
+.plan-top { display: flex; align-items: center; gap: 8px; margin: 8px 0 10px; }
+.plan-top .hint { flex: 1; margin: 0; }
+.day {
+  background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+  padding: 10px 12px; margin-bottom: 10px; box-shadow: var(--shadow);
+}
+.day.is-today { border: 2px solid var(--today-accent); }
+.day-head { display: flex; align-items: center; gap: 6px; min-height: 36px; }
+.day-head h3 { font: 600 18px/1.2 var(--display); margin: 0; flex: 1; }
+.day-head .n { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; margin-right: 4px; }
+.tag { display: inline-block; font: 700 11px/1 var(--body); color: #fff; background: var(--today-accent); border-radius: 6px; padding: 4px 6px; margin-left: 8px; vertical-align: 3px; }
+.btn.sq.sm { width: 36px; height: 36px; }
+.prows { list-style: none; margin: 6px 0 0; padding: 0; }
+.prow { display: flex; align-items: center; gap: 6px; padding: 5px 0; border-top: 1px solid var(--line); }
+.prow:first-child { border-top: 0; }
+.prow .num {
+  width: 24px; height: 24px; border-radius: 50%; background: var(--c); color: #fff;
+  font-size: 12px; font-weight: 700; display: grid; place-items: center; flex: none;
+}
+.prow .num.emo { background: transparent; font-size: 16px; }
+.prow .pname {
+  flex: 1; min-width: 0; text-align: left; border: 0; background: transparent; padding: 6px 0;
+  font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.prow.been .pname { text-decoration: line-through; opacity: .6; }
+.mv {
+  width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--line); background: var(--card);
+  display: grid; place-items: center; flex: none; font-size: 16px;
+}
+.mv svg { width: 16px; height: 16px; }
+.mv:disabled { opacity: .3; }
+.empty-day { margin: 6px 0 2px; font-size: 13px; color: var(--muted); }
+details.unplanned summary { font: 600 16px/1.2 var(--display); cursor: pointer; padding: 6px 0; }
+details.unplanned summary .n { font: 13px var(--body); color: var(--muted); margin-left: 4px; }
+.cat-row { display: flex; align-items: center; gap: 8px; margin: 0 0 4px; }
+.cat-row .cat-tag { margin: 0; flex: 1; }
+.daychip {
+  flex: none; border: 1px solid var(--line); background: var(--soft); border-radius: 999px;
+  padding: 3px 10px; font-size: 12px; font-weight: 600; color: var(--muted);
+}
+.daychip.set { background: var(--card); color: var(--ink); border-color: var(--today-accent); }
+.daypick { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
+.daypick .btn { justify-content: space-between; height: 46px; font-size: 15px; }
+.daypick .btn[aria-pressed="true"] { border: 2px solid var(--today-accent); }
+.daypick .btn .n { color: var(--muted); font-weight: 400; font-size: 13px; }
+.pin.num span { font: 700 14px/1 var(--body); color: #fff; }
+.chip.plan[aria-pressed="true"] { background: var(--today-accent); border-color: var(--today-accent); color: #fff; }
 
 .card {
   background: var(--card); border: 1px solid var(--line); border-radius: 16px;
@@ -324,7 +381,11 @@ details.more summary { font-size: 14px; color: var(--muted); cursor: pointer; }
   <div class="seg" role="tablist">
     <button role="tab" id="tabList" aria-selected="true">List</button>
     <button role="tab" id="tabMap" aria-selected="false">Map</button>
-    <button role="tab" id="tabToday" aria-selected="false">Today<span class="n" id="todayN" hidden>0</span></button>
+    <button role="tab" id="tabPlan" aria-selected="false">Plan</button>
+    <button role="tab" id="tabToday" aria-selected="false">My Today<span class="n" id="todayN" hidden>0</span></button>
+  </div>
+  <div class="searchbox" id="searchBox">
+    <input class="in search" id="search" type="search" placeholder="Search names and notes" enterkeyhint="search" autocomplete="off" aria-label="Search places">
   </div>
   <div class="chips" id="chips"></div>
 </header>
@@ -343,6 +404,13 @@ details.more summary { font-size: 14px; color: var(--muted); cursor: pointer; }
     </div>
     <div id="peek"></div>
   </section>
+  <section id="planView">
+    <div class="plan-top">
+      <p class="hint" id="planHint"></p>
+      <button type="button" class="btn" id="suggestBtn" hidden>✨ Suggest days</button>
+    </div>
+    <div id="planDays"></div>
+  </section>
   <section id="todayView">
     <div id="todayControls">
       <div class="seg today-seg" role="tablist" aria-label="Today view">
@@ -351,6 +419,7 @@ details.more summary { font-size: 14px; color: var(--muted); cursor: pointer; }
       </div>
       <div class="today-bar">
         <span class="hint" id="todayEmpty"></span>
+        <button type="button" class="btn" id="loadPlanBtn" data-load-plan hidden>📅 Add today’s plan</button>
         <button type="button" class="btn danger" id="clearTodayBtn" data-clear-today hidden>Clear day</button>
       </div>
     </div>
@@ -419,6 +488,20 @@ details.more summary { font-size: 14px; color: var(--muted); cursor: pointer; }
   </form>
 </dialog>
 
+<!-- Pick a day for a place -->
+<dialog class="sheet" id="pickSheet">
+  <div class="sheet-in">
+    <div class="grab"></div>
+    <div class="sheet-head">
+      <h2 id="pickTitle">Plan</h2>
+      <button type="button" class="btn ghost" data-close autofocus>Close</button>
+    </div>
+    <p class="hint">Pick a day. Everyone on this trip sees the plan.</p>
+    <div class="daypick" id="pickDays"></div>
+    <div class="pad-bottom"></div>
+  </div>
+</dialog>
+
 <!-- Help sheet -->
 <dialog class="sheet" id="helpSheet" data-os="android">
   <div class="sheet-in help">
@@ -476,6 +559,16 @@ details.more summary { font-size: 14px; color: var(--muted); cursor: pointer; }
       <li>It's one live list. Anything you add, edit or tick shows on everyone else's phone too, within about a minute and a half.</li>
     </ul>
 
+    <h3 class="sec">5. Plan the days</h3>
+    <ul>
+      <li>Set the trip's first and last day in <kbd>⚙</kbd> → <b>This trip</b>. Everyone on the trip shares them.</li>
+      <li>Tap <kbd>📅 Plan</kbd> on a place to put it on a day. The <b>Plan</b> tab shows every day; the arrows change the order.</li>
+      <li><b>✨ Suggest days</b> spreads the places you haven't planned over the trip, grouped by area. Tap <b>Undo</b> if you don't like it.</li>
+      <li>The route button sorts a day into a short walking order, starting from its first place. The pin button shows that day on the map, numbered.</li>
+      <li><b>My Today</b> is just for you. On a trip day it starts with that day's plan; tap the star on any place to add or remove it.</li>
+      <li>The search box finds places by name or by what's in <i>Why go?</i>.</li>
+    </ul>
+
     <h3 class="sec">Stuck?</h3>
     <ul>
       <li>Places look out of date? Tap the refresh arrow at the top.</li>
@@ -505,6 +598,11 @@ details.more summary { font-size: 14px; color: var(--muted); cursor: pointer; }
       <label class="f" for="sNear">Where you're travelling</label>
       <input class="in" id="sNear" placeholder="Osaka, Japan">
       <p class="hint">Helps typed names like “Kuromon Market” find the right spot.</p>
+      <div class="row">
+        <div><label class="f" for="sStart">First day</label><input class="in" type="date" id="sStart"></div>
+        <div><label class="f" for="sEnd">Last day</label><input class="in" type="date" id="sEnd"></div>
+      </div>
+      <p class="hint">Sets the days you can plan in the Plan tab.</p>
       <div class="status" id="tripStatus"></div>
       <button type="submit" class="btn primary wide" id="tripSave">Save trip details</button>
     </form>
@@ -569,6 +667,9 @@ const ICON = {
   check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>',
   edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
   star: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l2.6 5.6 6 .7-4.4 4.2 1.2 6-5.4-3-5.4 3 1.2-6-4.4-4.2 6-.7z"/></svg>',
+  route: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="2.5"/><circle cx="18" cy="5" r="2.5"/><path d="M8.5 19H16a3.5 3.5 0 0 0 0-7H8a3.5 3.5 0 0 1 0-7h7.5"/></svg>',
+  up: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>',
+  down: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>',
 };
 const DEMO_ITEMS = [
   { id: 'd1', name: 'Kuromon Ichiba Market', category: 'eat', about: 'Covered food market, 170-odd stalls', why: 'Grilled scallops and tuna skewers. Go before 11, it gets packed.', address: 'Nipponbashi, Chuo Ward, Osaka', lat: 34.6654, lng: 135.5066 },
@@ -599,12 +700,48 @@ function catOf(p) { return CATS[p.category] ? p.category : 'other'; }
 function hasPin(p) { return p.lat != null && p.lng != null && p.lat !== '' && isFinite(p.lat); }
 
 // ---------------------------------------------------------------- state
-const cfg = Object.assign({ url: '', key: '', trip: '', near: '', demo: false, demoTrip: '', demoNear: 'Osaka, Japan' }, store.get('cfg', {}));
+const cfg = Object.assign({ url: '', key: '', trip: '', near: '', start: '', end: '', planReady: false,
+  demo: false, demoTrip: '', demoNear: 'Osaka, Japan', demoStart: '', demoEnd: '' }, store.get('cfg', {}));
 const tripName = () => cfg.demo ? cfg.demoTrip : cfg.trip;
 const tripArea = () => cfg.demo ? cfg.demoNear : cfg.near;
 const connected = () => !!cfg.url && !cfg.demo;
+
+// ---------------------------------------------------------------- trip days
+// Days are local calendar dates as yyyy-mm-dd, so "today" means today where the phone is.
+const isoDay = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const todayISO = () => isoDay(new Date());
+function addDays(iso, n) { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return isoDay(d); }
+const tripSpan = (s, e) => Math.round((new Date(e + 'T12:00:00') - new Date(s + 'T12:00:00')) / 864e5) + 1;
+// The demo trip runs from today for four days, so the plan and My Today have something to show.
+const tripStart = () => cfg.demo ? (cfg.demoStart || todayISO()) : cfg.start;
+const tripEnd = () => cfg.demo ? (cfg.demoEnd || addDays(todayISO(), 3)) : cfg.end;
+let daysMemo = { key: null, list: [], set: new Set() };
+function tripDays() {
+  const s = tripStart(), e = tripEnd(), key = s + '|' + e;
+  if (daysMemo.key !== key) {
+    const list = [];
+    if (s && e && e >= s) for (let d = s; d <= e && list.length < 60; d = addDays(d, 1)) list.push(d);
+    daysMemo = { key, list, set: new Set(list) };
+  }
+  return daysMemo.list;
+}
+// A day outside the trip's dates (the dates were changed) counts as not planned.
+function dayOf(p) { tripDays(); return p.day && daysMemo.set.has(p.day) ? p.day : ''; }
+const byOrder = (a, b) => (a.dayOrder ?? 1e9) - (b.dayOrder ?? 1e9) || String(a.name).localeCompare(String(b.name));
+function dayItems(iso) { return items.filter(p => dayOf(p) === iso).sort(byOrder); }
+// "Wed 30 Sep": built by hand, since browsers disagree on commas and "Sept".
+function dayLabel(iso) {
+  const d = new Date(iso + 'T12:00:00');
+  const part = o => d.toLocaleDateString('en-GB', o).slice(0, 3);
+  return `${part({ weekday: 'short' })} ${d.getDate()} ${part({ month: 'short' })}`;
+}
+// Plan needs trip dates, and (on a real Sheet) a Code.gs new enough to store days.
+const planReady = () => cfg.demo || cfg.planReady;
+const planOn = () => planReady() && tripDays().length > 0;
 let items = store.get(cfg.demo ? 'demoItems' : 'items', []);
 let filter = 'all';
+let planFilter = '';           // '' | 'none' (not planned) | yyyy-mm-dd (one day, in route order)
+let query = '';                // search text
 let hideBeen = store.get('hideBeen', false);
 let view = 'list';
 let todayInner = store.get('todayInner', 'list');   // 'list' | 'map', inside the Today tab
@@ -614,9 +751,25 @@ function isToday(p) { return todayIds.has(p.id); }
 function saveTodayIds() { store.set('today', [...todayIds]); }
 function toggleToday(p) {
   if (todayIds.has(p.id)) todayIds.delete(p.id); else todayIds.add(p.id);
-  saveTodayIds();
+  saveTodayIds(); store.set('todayTouched', todayISO());
 }
-function todayVisible() { return sortByDistanceThenAdded(items.filter(isToday)); }
+// Today's planned places first, in route order; then anything else you starred.
+function todayVisible() {
+  const t = todayISO(), mine = items.filter(isToday);
+  return mine.filter(p => dayOf(p) === t).sort(byOrder)
+    .concat(sortByDistanceThenAdded(mine.filter(p => dayOf(p) !== t)));
+}
+// On each new trip day My Today starts from that day's plan. Stars you added today
+// (before the plan arrived) are kept; yesterday's are replaced.
+function seedMyToday() {
+  const t = todayISO();
+  if (!planOn() || store.get('todayDate', '') === t) return;
+  const plan = dayItems(t);
+  if (!plan.length) return;
+  if (store.get('todayTouched', '') !== t) todayIds.clear();
+  plan.forEach(p => todayIds.add(p.id));
+  saveTodayIds(); store.set('todayDate', t);
+}
 let pos = null;               // {lat, lng}
 let lastSync = store.get('lastSync', null);
 let offline = false;
@@ -625,7 +778,7 @@ let warnedAuth = false;
 
 // ---------------------------------------------------------------- API
 let lastWriteAt = 0;
-const WRITES = ['add', 'update', 'delete', 'settings'];
+const WRITES = ['add', 'update', 'delete', 'settings', 'plan'];
 async function api(action, payload = {}) {
   if (WRITES.includes(action)) lastWriteAt = Date.now();
   const j = await apiCall(action, payload);
@@ -732,7 +885,15 @@ function demoApi(action, p) {
       delete item.q; delete item.near;
       list.push(item); store.set('demoItems', list); return { ok: true, item };
     }
-    if (action === 'settings') return { ok: true, settings: { trip: p.trip, near: p.near, set: true } };
+    if (action === 'settings') return { ok: true, settings: { trip: p.trip, near: p.near, start: p.start, end: p.end, set: true, plan: true } };
+    if (action === 'plan') {
+      const out = [];
+      for (const c of p.changes) {
+        const it = list.find(x => x.id === c.id);
+        if (it) { it.day = c.day || ''; it.dayOrder = c.day ? c.dayOrder : null; out.push(it); }
+      }
+      store.set('demoItems', list); return { ok: true, items: out, gone: [] };
+    }
     if (action === 'update') {
       const i = list.findIndex(x => x.id === p.id);
       if (i < 0) return Promise.reject(Object.assign(new Error('That place was deleted on another phone.'), { gone: true }));
@@ -794,6 +955,9 @@ function goneElsewhere(id) {
 // The Sheet is the source of truth. The only time a phone pushes its own values
 // is a Sheet that has never had trip details (made with an older version of the app).
 function adoptSettings(st) {
+  // Dates and whether the Sheet can hold a plan come from the Sheet every time.
+  const next = { start: st.start || '', end: st.end || '', planReady: !!st.plan };
+  if (Object.keys(next).some(k => cfg[k] !== next[k])) { Object.assign(cfg, next); store.set('cfg', cfg); }
   if (st.set) {
     if (st.trip !== cfg.trip || st.near !== cfg.near) { cfg.trip = st.trip; cfg.near = st.near; store.set('cfg', cfg); }
   } else if (cfg.trip || cfg.near) {
@@ -847,18 +1011,33 @@ function sortByDistanceThenAdded(list) {
     return String(b.added || b.id).localeCompare(String(a.added || a.id));
   });
 }
-function visible() {
-  return sortByDistanceThenAdded(items.filter(p => (filter === 'all' || catOf(p) === filter) && !(hideBeen && p.been)));
+// Search ignores case and accents, so "yunagi" finds "Yūnagi".
+const fold = s => String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+function matchesQuery(p) {
+  if (!query) return true;
+  const q = fold(query);
+  return fold(p.name).includes(q) || fold(p.why).includes(q);
 }
+function visible() {
+  const list = items.filter(p => (filter === 'all' || catOf(p) === filter) && !(hideBeen && p.been) && matchesQuery(p));
+  if (planOn() && planFilter === 'none') return sortByDistanceThenAdded(list.filter(p => !dayOf(p)));
+  if (planOn() && planFilter) return list.filter(p => dayOf(p) === planFilter).sort(byOrder);
+  return sortByDistanceThenAdded(list);
+}
+// Showing one planned day: the map numbers its pins and draws the route.
+const dayRoute = () => planOn() && planFilter && planFilter !== 'none' ? planFilter : '';
 
 function cardHTML(p) {
   const c = catOf(p);
   const dist = distLabel(p);
   const inToday = isToday(p);
+  const pd = planOn() ? dayOf(p) : null;
+  const dayChip = pd == null ? ''
+    : `<button type="button" class="daychip${pd ? ' set' : ''}" data-act="plan" aria-label="${pd ? 'Planned for ' + esc(dayLabel(pd)) + '. Change day' : 'Add to a day in the plan'}">📅 ${pd ? esc(dayLabel(pd)) : 'Plan'}</button>`;
   return `<article class="card cat-${c}${p.been ? ' been' : ''}" data-id="${esc(p.id)}">
-    <p class="cat-tag">${CATS[c].emoji} ${CATS[c].label}</p>
+    <div class="cat-row"><p class="cat-tag">${CATS[c].emoji} ${CATS[c].label}</p>${dayChip}</div>
     <div class="card-head">
-      <button type="button" class="star" data-act="today" aria-pressed="${inToday}" aria-label="${inToday ? 'Remove from Today' : 'Add to Today'}">${ICON.star}</button>
+      <button type="button" class="star" data-act="today" aria-pressed="${inToday}" aria-label="${inToday ? 'Remove from My Today' : 'Add to My Today'}">${ICON.star}</button>
       <h3>${esc(p.name || 'Untitled')}</h3>${dist ? `<span class="dist">${esc(dist)}</span>` : ''}
     </div>
     ${p.about ? `<p class="about">${esc(p.about)}</p>` : ''}
@@ -884,6 +1063,14 @@ function renderChips() {
     if (!counts[k] && filter !== k) continue;
     h += `<button class="chip" data-f="${k}" aria-pressed="${filter === k}">${v.emoji} ${v.label}<span class="n">${counts[k] || 0}</span></button>`;
   }
+  if (planOn()) {
+    const notPlanned = items.filter(p => !dayOf(p)).length;
+    h += `<button class="chip plan" data-pf="none" aria-pressed="${planFilter === 'none'}">Not planned<span class="n">${notPlanned}</span></button>`;
+    for (const d of tripDays()) {
+      const n = dayItems(d).length;
+      if (n || planFilter === d) h += `<button class="chip plan" data-pf="${d}" aria-pressed="${planFilter === d}">📅 ${esc(dayLabel(d))}<span class="n">${n}</span></button>`;
+    }
+  }
   if (beenCount) h += `<button class="chip" data-hide aria-pressed="${hideBeen}">✓ Hide visited<span class="n">${beenCount}</span></button>`;
   if (!pos && items.some(hasPin)) h += `<button class="chip" data-near>📍 Nearest first</button>`;
   $('#chips').innerHTML = h;
@@ -907,6 +1094,8 @@ function render() {
   document.title = tripName() ? `${tripName()} · Trip Pins` : 'Trip Pins';
   const setUp = !!(cfg.url || cfg.demo);
   $('#fab').hidden = !setUp || view === 'today'; $('#chips').hidden = !setUp; $('#sub').hidden = !setUp;
+  $('#searchBox').hidden = !setUp || !items.length;
+  seedMyToday();
   renderSub(); renderChips();
   const list = visible();
   const el = $('#list');
@@ -924,7 +1113,8 @@ function render() {
       <p>Found somewhere good? In Google Maps tap <b>Share</b>, then pick Trip Pins (Android) or your Save Place shortcut (iPhone).</p>
       <p>Or tap <b>Add</b> and paste a link.</p></div>`;
   } else if (!list.length) {
-    el.innerHTML = `<div class="empty"><p>Nothing here with this filter.</p></div>`;
+    el.innerHTML = query ? `<div class="empty"><p>No places match “${esc(query)}”.</p></div>`
+      : `<div class="empty"><p>Nothing here with this filter.</p></div>`;
   } else {
     el.innerHTML = list.map(cardHTML).join('');
   }
@@ -933,16 +1123,21 @@ function render() {
   if (peekId) { const p = items.find(x => x.id === peekId); p ? showPeek(mainScope, p) : hidePeek(mainScope); }
   $('#tabToday').setAttribute('aria-selected', view === 'today');
   renderToday();
+  renderPlan();
 }
 
 function renderToday() {
-  const n = todayIds.size;
+  // Count what's actually here: places deleted on another phone leave their ids behind.
+  const list = todayVisible();
+  const n = list.length;
   const badge = $('#todayN');
   badge.textContent = n; badge.hidden = !n;
   $('#clearTodayBtn').hidden = !n;
-  const list = todayVisible();
+  const todays = planOn() ? dayItems(todayISO()) : [];
+  $('#loadPlanBtn').hidden = !todays.some(p => !isToday(p));
   const el = $('#todayList');
-  $('#todayEmpty').textContent = n ? '' : 'Nothing here yet. Tap the star on any place to plan it for today.';
+  $('#todayEmpty').textContent = n ? '' : todays.length ? 'Cleared. Add today’s plan back, or tap the star on any place.'
+    : 'Nothing here yet. Tap the star on any place to add it for today.';
   el.innerHTML = list.map(cardHTML).join('');
   if (todayScope.map) drawMarkers(todayScope);
   const peekId = $('#todayPeek').dataset.id;
@@ -997,11 +1192,20 @@ function drawMarkers(scope) {
   if (!scope.layer) return;
   scope.layer.clearLayers(); scope.markers = {};
   const sel = $('#' + scope.peekId).dataset.id;
-  scope.itemsFn().filter(hasPin).forEach(p => {
+  const all = scope.itemsFn();
+  // One planned day on the main map: number the pins in route order and join them up.
+  const route = scope === mainScope && dayRoute();
+  const shown = all.filter(hasPin);
+  if (route && shown.length > 1) {
+    const colour = getComputedStyle(document.documentElement).getPropertyValue('--today-accent').trim() || '#4A47C7';
+    L.polyline(shown.map(p => [p.lat, p.lng]), { color: colour, weight: 4, opacity: .75, dashArray: '2 8', lineCap: 'round', interactive: false }).addTo(scope.layer);
+  }
+  shown.forEach(p => {
     const c = catOf(p);
+    const label = route ? all.indexOf(p) + 1 : CATS[c].emoji;
     const icon = L.divIcon({
       className: '', iconSize: [34, 34], iconAnchor: [17, 41],
-      html: `<div class="pin cat-${c}${p.been ? ' been' : ''}${sel === p.id ? ' sel' : sel ? ' ghost' : ''}"><span>${CATS[c].emoji}</span></div>`,
+      html: `<div class="pin cat-${c}${route ? ' num' : ''}${p.been ? ' been' : ''}${sel === p.id ? ' sel' : sel ? ' ghost' : ''}"><span>${label}</span></div>`,
     });
     // With one place in focus, the rest fade back; tapping a faded pin focuses that one instead.
     const m = L.marker([p.lat, p.lng], { icon, title: p.name, riseOnHover: true, zIndexOffset: sel === p.id ? 1000 : 0 })
@@ -1045,6 +1249,9 @@ function setView(v) {
   view = v;
   document.body.classList.toggle('show-map', v === 'map');
   document.body.classList.toggle('show-today', v === 'today');
+  document.body.classList.toggle('show-plan', v === 'plan');
+  $('#tabPlan').setAttribute('aria-selected', v === 'plan');
+  if (v === 'plan') renderPlan();
   $('#tabList').setAttribute('aria-selected', v === 'list');
   $('#tabMap').setAttribute('aria-selected', v === 'map');
   $('#tabToday').setAttribute('aria-selected', v === 'today');
@@ -1249,8 +1456,193 @@ function clearTodayTap() {
   }
   resetClearToday();
   todayIds.clear(); saveTodayIds();
+  store.set('todayDate', todayISO());   // cleared on purpose: don't refill from the plan today
   render();
-  toast('Today cleared');
+  toast('My Today cleared');
+}
+
+// ---------------------------------------------------------------- plan
+// The plan is shared through the Sheet: each place carries the day it's planned for
+// and its place in that day's route.
+let openUnplanned = false;
+
+function renderPlan() {
+  const el = $('#planDays'), hint = $('#planHint'), sug = $('#suggestBtn');
+  sug.hidden = true;
+  if (!cfg.url && !cfg.demo) { hint.textContent = 'Connect to your Sheet to plan the trip.'; el.innerHTML = ''; return; }
+  if (!planReady()) {
+    hint.innerHTML = '<b>Your Sheet needs the new Code.gs to share a plan.</b> Paste it into Apps Script, then Deploy → Manage deployments → pencil → New version.';
+    el.innerHTML = ''; return;
+  }
+  const days = tripDays();
+  if (!days.length) {
+    hint.textContent = 'Add your trip dates to start planning.';
+    el.innerHTML = '<button type="button" class="btn primary wide" data-set-dates>Set trip dates</button>'; return;
+  }
+  const unplanned = items.filter(p => !dayOf(p));
+  const planned = items.length - unplanned.length;
+  hint.textContent = `${days.length} day${days.length === 1 ? '' : 's'} · ${planned} planned · ${unplanned.length} not yet`;
+  sug.hidden = !unplanned.some(p => hasPin(p) && !p.been);
+  const t = todayISO();
+  el.innerHTML = days.map(d => {
+    const list = dayItems(d), label = esc(dayLabel(d));
+    return `<section class="day${d === t ? ' is-today' : ''}" data-day="${d}">
+      <header class="day-head">
+        <h3>${label}${d === t ? '<span class="tag">Today</span>' : ''}</h3>
+        <span class="n">${list.length ? list.length + (list.length === 1 ? ' place' : ' places') : ''}</span>
+        ${list.filter(hasPin).length > 2 ? `<button type="button" class="btn sq sm" data-best="${d}" aria-label="Best order for ${label}">${ICON.route}</button>` : ''}
+        ${list.some(hasPin) ? `<button type="button" class="btn sq sm" data-daymap="${d}" aria-label="Show ${label} on the map">${ICON.map}</button>` : ''}
+      </header>
+      ${list.length ? `<ol class="prows">${list.map((p, i) => prowHTML(p, i, list.length)).join('')}</ol>`
+                    : '<p class="empty-day">Nothing planned yet. Tap 📅 on a place to add it here.</p>'}
+    </section>`;
+  }).join('') + (unplanned.length ? `<details class="day unplanned"${openUnplanned ? ' open' : ''}>
+      <summary>Not planned yet<span class="n">${unplanned.length}</span></summary>
+      <ol class="prows">${sortByDistanceThenAdded(unplanned).map(p => prowHTML(p, -1)).join('')}</ol>
+    </details>` : '');
+}
+
+function prowHTML(p, i, n) {
+  const c = catOf(p);
+  const moves = i < 0
+    ? `<button type="button" class="mv" data-pick aria-label="Pick a day for ${esc(p.name)}">📅</button>`
+    : `<button type="button" class="mv" data-move="-1" aria-label="Move up"${i === 0 ? ' disabled' : ''}>${ICON.up}</button>
+       <button type="button" class="mv" data-move="1" aria-label="Move down"${i === n - 1 ? ' disabled' : ''}>${ICON.down}</button>`;
+  return `<li class="prow cat-${c}${p.been ? ' been' : ''}" data-id="${esc(p.id)}">
+    <span class="num${i < 0 ? ' emo' : ''}">${i < 0 ? CATS[c].emoji : i + 1}</span>
+    <button type="button" class="pname" data-pick>${i < 0 ? '' : CATS[c].emoji + ' '}${esc(p.name || 'Untitled')}</button>
+    ${moves}
+  </li>`;
+}
+
+// Change several places' days at once. The screen updates straight away; if the
+// Sheet refuses, it goes back. A message with Undo is shown when `msg` is given.
+async function planChanges(changes, msg) {
+  if (!changes.length) return;
+  const key = cfg.demo ? 'demoItems' : 'items';
+  const before = changes.map(c => items.find(x => x.id === c.id)).filter(Boolean)
+    .map(p => ({ id: p.id, day: p.day || '', dayOrder: p.dayOrder == null ? null : p.dayOrder }));
+  const apply = list => list.forEach(c => {
+    const p = items.find(x => x.id === c.id);
+    if (p) { p.day = c.day || ''; p.dayOrder = c.day ? c.dayOrder : null; }
+  });
+  apply(changes); store.set(key, items); render();
+  try {
+    const j = await api('plan', { changes });
+    (j.items || []).forEach(upsert);
+    (j.gone || []).forEach(dropLocal);
+    render();
+    if (msg) toast(msg, { label: 'Undo', fn: () => planChanges(before) });
+  } catch (e) {
+    apply(before); store.set(key, items); render(); toast(e.message);
+  }
+}
+
+// New positions for a day's places in the given order; only the ones that moved.
+function renumber(d, list) {
+  return list.map((p, k) => ({ id: p.id, day: d, dayOrder: k + 1 }))
+    .filter((c, k) => list[k].dayOrder !== c.dayOrder || dayOf(list[k]) !== d);
+}
+
+function setDay(p, d) {
+  if (dayOf(p) === d) return;
+  const last = d ? dayItems(d).reduce((m, x) => Math.max(m, x.dayOrder || 0), 0) : 0;
+  planChanges([{ id: p.id, day: d, dayOrder: d ? last + 1 : null }],
+    d ? `${p.name || 'Place'} → ${dayLabel(d)}` : `${p.name || 'Place'} taken off the plan`);
+}
+
+function movePlace(p, dir) {
+  const d = dayOf(p), list = dayItems(d), i = list.indexOf(p), j = i + dir;
+  if (!d || j < 0 || j >= list.length) return;
+  [list[i], list[j]] = [list[j], list[i]];
+  planChanges(renumber(d, list));
+}
+
+// Visiting order: nearest next place each time, then untangle crossings (2-opt).
+// The first place stays first, so you choose where the day starts.
+function routeOrder(pinned) {
+  if (pinned.length < 3) return pinned.slice();
+  const route = [pinned[0]], left = pinned.slice(1);
+  while (left.length) {
+    const last = route[route.length - 1];
+    let bi = 0;
+    left.forEach((q, k) => { if (metres(last, q) < metres(last, left[bi])) bi = k; });
+    route.push(left.splice(bi, 1)[0]);
+  }
+  for (let improved = true, pass = 0; improved && pass < 20; pass++) {
+    improved = false;
+    for (let i = 1; i < route.length - 1; i++) {
+      for (let k = i + 1; k < route.length; k++) {
+        const a = route[i - 1], b = route[i], c = route[k], e = route[k + 1];
+        const now = metres(a, b) + (e ? metres(c, e) : 0), swapped = metres(a, c) + (e ? metres(b, e) : 0);
+        if (swapped + 1 < now) { route.splice(i, k - i + 1, ...route.slice(i, k + 1).reverse()); improved = true; }
+      }
+    }
+  }
+  return route;
+}
+
+function bestOrder(d) {
+  const list = dayItems(d);
+  const ordered = routeOrder(list.filter(hasPin)).concat(list.filter(p => !hasPin(p)));
+  const ch = renumber(d, ordered);
+  if (!ch.length) toast('Already the shortest route I can find');
+  else planChanges(ch, `${dayLabel(d)} sorted by route`);
+}
+
+// Group the unplanned pins into the trip's days by area, a similar number per day,
+// filling the emptiest days first. Visited places stay out.
+function suggestDays() {
+  const days = tripDays();
+  const pool = items.filter(p => !dayOf(p) && hasPin(p) && !p.been);
+  if (!days.length || !pool.length) return;
+  const k = Math.min(days.length, pool.length);
+  const mid = { lat: pool.reduce((s, p) => s + p.lat, 0) / pool.length, lng: pool.reduce((s, p) => s + p.lng, 0) / pool.length };
+  const near = (p, cs) => Math.min(...cs.map(c => metres(p, c)));
+  // Spread the starting centres out: the farthest place from those picked so far.
+  let centres = [pool.reduce((a, b) => metres(b, mid) > metres(a, mid) ? b : a)];
+  while (centres.length < k) centres.push(pool.reduce((a, b) => near(b, centres) > near(a, centres) ? b : a));
+  centres = centres.map(c => ({ lat: c.lat, lng: c.lng }));
+  let groups = [];
+  for (let iter = 0; iter < 12; iter++) {
+    groups = centres.map(() => []);
+    pool.forEach(p => { let bi = 0; centres.forEach((c, i) => { if (metres(p, c) < metres(p, centres[bi])) bi = i; }); groups[bi].push(p); });
+    centres = centres.map((c, i) => groups[i].length
+      ? { lat: groups[i].reduce((s, p) => s + p.lat, 0) / groups[i].length, lng: groups[i].reduce((s, p) => s + p.lng, 0) / groups[i].length } : c);
+  }
+  // Even the days out: each place goes to its nearest centre that still has room.
+  const cap = Math.ceil(pool.length / k) + 1;
+  groups = centres.map(() => []);
+  pool.flatMap(p => centres.map((c, i) => ({ p, i, m: metres(p, c) }))).sort((a, b) => a.m - b.m)
+    .forEach(({ p, i }) => { if (!p._g && groups[i].length < cap) { groups[i].push(p); p._g = true; } });
+  pool.forEach(p => delete p._g);
+  groups = groups.filter(g => g.length).sort((a, b) => b.length - a.length);
+  const emptiest = days.slice().sort((a, b) => dayItems(a).length - dayItems(b).length || (a < b ? -1 : 1));
+  const changes = [];
+  groups.forEach((g, gi) => {
+    const d = emptiest[gi], existing = dayItems(d);
+    const last = existing.reduce((m, x) => Math.max(m, x.dayOrder || 0), 0);
+    // Start the new stretch from the place nearest where the day already ends.
+    const tail = existing.filter(hasPin).pop();
+    if (tail) g.sort((a, b) => metres(tail, a) - metres(tail, b));
+    routeOrder(g).forEach((p, n) => changes.push({ id: p.id, day: d, dayOrder: last + n + 1 }));
+  });
+  planChanges(changes, `Planned ${changes.length} place${changes.length === 1 ? '' : 's'} over ${groups.length} day${groups.length === 1 ? '' : 's'}`);
+}
+
+const pickSheet = $('#pickSheet');
+let pickId = null;
+function openPlanPick(p) {
+  if (!planOn()) { setView('plan'); return; }
+  pickId = p.id;
+  const cur = dayOf(p), t = todayISO();
+  $('#pickTitle').textContent = p.name || 'Plan';
+  $('#pickDays').innerHTML = tripDays().map(d => {
+    const n = dayItems(d).length;
+    return `<button type="button" class="btn" data-setday="${d}" aria-pressed="${cur === d}">
+      <span>${esc(dayLabel(d))}${d === t ? ' · Today' : ''}</span><span class="n">${n ? n + (n === 1 ? ' place' : ' places') : ''}</span></button>`;
+  }).join('') + (cur ? '<button type="button" class="btn ghost danger" data-setday="">Take it off the plan</button>' : '');
+  pickSheet.showModal();
 }
 
 // ---------------------------------------------------------------- settings
@@ -1267,7 +1659,8 @@ function openSettings(focusTrip) {
   $('#connForm').classList.toggle('sep', isConn);
   $('#tripHint').textContent = cfg.demo ? 'Demo: these stay on this phone.' : 'Shared with every phone on this Sheet.';
   $('#sTrip').value = tripName(); $('#sNear').value = tripArea();
-  tripAtOpen = { trip: tripName(), near: tripArea() };
+  $('#sStart').value = tripStart() || ''; $('#sEnd').value = tripEnd() || '';
+  tripAtOpen = { trip: tripName(), near: tripArea(), start: tripStart() || '', end: tripEnd() || '' };
   $('#sUrl').value = ''; $('#sKey').value = ''; $('#keyRow').hidden = false;
   $('#kvUrl').textContent = cfg.url; $('#kvKey').textContent = cfg.key;
   $('#demoBtn').textContent = cfg.demo ? 'Leave demo' : 'Try demo';
@@ -1305,6 +1698,7 @@ async function connectTo(url, key) {
   if (newSheet) { cfg.trip = ''; cfg.near = ''; }        // never carry one Sheet's trip into another
   const st = j.settings || {};
   if (st.set) { cfg.trip = st.trip; cfg.near = st.near; }
+  cfg.start = st.start || ''; cfg.end = st.end || ''; cfg.planReady = !!st.plan;
   store.set('cfg', cfg);
   items = j.items || []; store.set('items', items);
   lastSync = Date.now(); offline = false; syncProblem = ''; warnedAuth = false;
@@ -1348,19 +1742,33 @@ async function submitConnect(ev) {
 // fields don't undo each other.
 async function submitTrip(ev) {
   ev.preventDefault();
-  const now = { trip: $('#sTrip').value.trim(), near: $('#sNear').value.trim() };
+  const now = { trip: $('#sTrip').value.trim(), near: $('#sNear').value.trim(), start: $('#sStart').value, end: $('#sEnd').value };
+  if (now.start && now.end && now.end < now.start) {
+    setStatus($('#tripStatus'), 'bad', '<div>The last day is before the first day.</div>'); return;
+  }
+  if (now.start && now.end && tripSpan(now.start, now.end) > 60) {
+    setStatus($('#tripStatus'), 'bad', '<div>Plans go up to 60 days. Pick a shorter trip.</div>'); return;
+  }
   const changed = {};
-  for (const k of ['trip', 'near']) if (now[k] !== tripAtOpen[k]) changed[k] = now[k];
+  for (const k of ['trip', 'near', 'start', 'end']) if (now[k] !== tripAtOpen[k]) changed[k] = now[k];
   if (!Object.keys(changed).length) { setSheet.close(); return; }
   if (cfg.demo) {
     if ('trip' in changed) cfg.demoTrip = changed.trip;
     if ('near' in changed) cfg.demoNear = changed.near;
+    if ('start' in changed) cfg.demoStart = changed.start;
+    if ('end' in changed) cfg.demoEnd = changed.end;
     store.set('cfg', cfg); setSheet.close(); render(); return;
+  }
+  if (('start' in changed || 'end' in changed) && !cfg.planReady) {
+    setStatus($('#tripStatus'), 'bad', '<div><b>Your Sheet needs the new Code.gs for trip dates.</b><small>Paste it into Apps Script and deploy a New version, then try again.</small></div>');
+    return;
   }
   $('#tripSave').disabled = true;
   try {
     const j = await api('settings', changed);
-    cfg.trip = j.settings.trip; cfg.near = j.settings.near; store.set('cfg', cfg);
+    cfg.trip = j.settings.trip; cfg.near = j.settings.near;
+    cfg.start = j.settings.start || ''; cfg.end = j.settings.end || ''; cfg.planReady = !!j.settings.plan;
+    store.set('cfg', cfg);
     setSheet.close(); render(); toast('Trip details updated on every phone');
   } catch (e) {
     setStatus($('#tripStatus'), 'bad', `<div>${esc(e.message)}</div>`);
@@ -1385,7 +1793,7 @@ function disconnect() {
     b.classList.add('armed'); b.textContent = 'Tap again: this phone forgets the Sheet';
     clearTimeout(discTimer); discTimer = setTimeout(resetDisconnect, 4000); return;
   }
-  Object.assign(cfg, { url: '', key: '', trip: '', near: '' });
+  Object.assign(cfg, { url: '', key: '', trip: '', near: '', start: '', end: '', planReady: false });
   store.set('cfg', cfg); items = []; store.set('items', []);
   syncProblem = ''; offline = false;
   setSheet.close(); render(); toast('Disconnected. Your places are still in the Sheet.');
@@ -1435,6 +1843,34 @@ document.addEventListener('click', e => {
   if (t.hasAttribute('data-near')) { startLocating(true); return; }
   if (t.hasAttribute('data-clear-today')) { clearTodayTap(); return; }
   if (t.dataset.cat) { chosenCat = t.dataset.cat; catButtons(chosenCat); return; }
+  // ----- plan
+  if (t.dataset.pf != null) {
+    planFilter = planFilter === t.dataset.pf ? '' : t.dataset.pf;
+    hidePeek(mainScope); render(); if (mainScope.map) fitAll(mainScope); return;
+  }
+  if (t.hasAttribute('data-setday')) {
+    const p = items.find(x => x.id === pickId);
+    pickSheet.close(); if (p) setDay(p, t.dataset.setday); return;
+  }
+  if (t.hasAttribute('data-set-dates')) { openSettings(); setTimeout(() => $('#sStart').focus(), 60); return; }
+  if (t.hasAttribute('data-load-plan')) {
+    dayItems(todayISO()).forEach(p => todayIds.add(p.id)); saveTodayIds(); render(); return;
+  }
+  if (t.dataset.best) { bestOrder(t.dataset.best); return; }
+  if (t.dataset.daymap) {
+    // Just that day on the map: clear other filters so every stop shows.
+    planFilter = t.dataset.daymap; filter = 'all'; query = ''; $('#search').value = '';
+    setView('map'); render();
+    const go = () => { if (!mainScope.map) return setTimeout(go, 150); fitAll(mainScope); };
+    go(); return;
+  }
+  const row = t.closest('.prow');
+  if (row) {
+    const p = items.find(x => x.id === row.dataset.id); if (!p) return;
+    if (t.dataset.move) movePlace(p, +t.dataset.move);
+    else if (t.hasAttribute('data-pick')) openPlanPick(p);
+    return;
+  }
   const card = t.closest('.card'); if (!card) return;
   const p = items.find(x => x.id === card.dataset.id); if (!p) return;
   const act = t.dataset.act;
@@ -1442,6 +1878,7 @@ document.addEventListener('click', e => {
   if (act === 'edit') openEdit(p);
   else if (act === 'been') toggleBeen(p);
   else if (act === 'today') { toggleToday(p); render(); }
+  else if (act === 'plan') openPlanPick(p);
   else if (act === 'map') {
     const scope = inToday ? todayScope : mainScope;
     if (inToday) { setView('today'); setTodayInner('map'); } else setView('map');
@@ -1455,6 +1892,10 @@ document.querySelectorAll('dialog.sheet').forEach(d => d.addEventListener('click
 $('#tabList').onclick = () => setView('list');
 $('#tabMap').onclick = () => setView('map');
 $('#tabToday').onclick = () => setView('today');
+$('#tabPlan').onclick = () => setView('plan');
+$('#suggestBtn').onclick = suggestDays;
+$('#search').addEventListener('input', () => { query = $('#search').value.trim(); hidePeek(mainScope); render(); });
+document.addEventListener('toggle', e => { if (e.target.matches && e.target.matches('details.unplanned')) openUnplanned = e.target.open; }, true);
 $('#todayTabList').onclick = () => setTodayInner('list');
 $('#todayTabMap').onclick = () => setTodayInner('map');
 $('#todayFitBtn').onclick = () => fitAll(todayScope);
