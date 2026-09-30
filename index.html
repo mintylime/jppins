@@ -162,6 +162,7 @@ body.show-plan .chips { display: none; }
 }
 .mv svg { width: 16px; height: 16px; }
 .mv:disabled { opacity: .3; }
+.mv.unplan { color: var(--muted); border-color: transparent; background: transparent; }
 .empty-day { margin: 6px 0 2px; font-size: 13px; color: var(--muted); }
 details.unplanned summary, details.past-days summary { font: 600 16px/1.2 var(--display); cursor: pointer; padding: 6px 0; }
 details.unplanned summary .n, details.past-days summary .n { font: 13px var(--body); color: var(--muted); margin-left: 6px; }
@@ -687,6 +688,7 @@ const ICON = {
   route: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="2.5"/><circle cx="18" cy="5" r="2.5"/><path d="M8.5 19H16a3.5 3.5 0 0 0 0-7H8a3.5 3.5 0 0 1 0-7h7.5"/></svg>',
   up: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>',
   down: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>',
+  x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>',
 };
 const DEMO_ITEMS = [
   { id: 'd1', name: 'Kuromon Ichiba Market', category: 'eat', about: 'Covered food market, 170-odd stalls', why: 'Grilled scallops and tuna skewers. Go before 11, it gets packed.', address: 'Nipponbashi, Chuo Ward, Osaka', lat: 34.6654, lng: 135.5066 },
@@ -1573,10 +1575,12 @@ function prowHTML(p, i, n, past) {
   const c = catOf(p);
   const badge = past ? (p.been ? '<span class="num done">✓</span>' : '<span class="num miss">!</span>')
     : `<span class="num${i < 0 ? ' emo' : ''}">${i < 0 ? CATS[c].emoji : i + 1}</span>`;
-  const moves = past ? (p.been ? '' : `<button type="button" class="mv" data-pick aria-label="Move ${esc(p.name)} to another day">📅</button>`)
+  // One tap takes a place off its day (back to Not planned); Undo is in the message.
+  const unplan = `<button type="button" class="mv unplan" data-unplan aria-label="Take ${esc(p.name)} off this day">${ICON.x}</button>`;
+  const moves = past ? (p.been ? '' : `<button type="button" class="mv" data-pick aria-label="Move ${esc(p.name)} to another day">📅</button>${unplan}`)
     : i < 0 ? `<button type="button" class="mv" data-pick aria-label="Pick a day for ${esc(p.name)}">📅</button>`
     : `<button type="button" class="mv" data-move="-1" aria-label="Move up"${i === 0 ? ' disabled' : ''}>${ICON.up}</button>
-       <button type="button" class="mv" data-move="1" aria-label="Move down"${i === n - 1 ? ' disabled' : ''}>${ICON.down}</button>`;
+       <button type="button" class="mv" data-move="1" aria-label="Move down"${i === n - 1 ? ' disabled' : ''}>${ICON.down}</button>${unplan}`;
   return `<li class="prow cat-${c}${p.been ? ' been' : ''}${past && !p.been ? ' missed' : ''}" data-id="${esc(p.id)}">
     ${badge}
     <button type="button" class="pname" data-pick>${i < 0 && !past ? '' : CATS[c].emoji + ' '}${esc(p.name || 'Untitled')}</button>
@@ -1940,6 +1944,7 @@ document.addEventListener('click', e => {
   if (row) {
     const p = items.find(x => x.id === row.dataset.id); if (!p) return;
     if (t.dataset.move) movePlace(p, +t.dataset.move);
+    else if (t.hasAttribute('data-unplan')) setDay(p, '');
     else if (t.hasAttribute('data-pick')) openPlanPick(p);
     return;
   }
