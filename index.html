@@ -422,7 +422,6 @@ details.more summary { font-size: 14px; color: var(--muted); cursor: pointer; }
   <section id="planView">
     <div class="plan-top">
       <p class="hint" id="planHint"></p>
-      <button type="button" class="btn" id="suggestBtn" hidden>✨ Suggest days</button>
     </div>
     <div id="planDays"></div>
   </section>
@@ -568,7 +567,7 @@ details.more summary { font-size: 14px; color: var(--muted); cursor: pointer; }
 
     <h3 class="sec">4. Using the shared list</h3>
     <ul>
-      <li><b>Go</b> opens Google Maps with directions to that spot.</li>
+      <li><b>Go</b> opens Google Maps with directions to that spot. <b>🚆</b> opens public transport directions (trains, subway, buses) from where you are.</li>
       <li><b>List</b>: tap <kbd>🧭 Nearest first</kbd> (and allow location) when you're out on the trip. <b>Map</b> shows everyone's places as coloured pins, and you as a blue dot.</li>
       <li>Visited places are hidden in the List and faded on the Map. <kbd>✓ Show visited</kbd> brings them back.</li>
       <li><b>✓</b> marks a place as visited. The pencil fixes a name, a note or a typo.</li>
@@ -579,10 +578,9 @@ details.more summary { font-size: 14px; color: var(--muted); cursor: pointer; }
     <ul>
       <li>Set the trip's first and last day in <kbd>⚙</kbd> → <b>This trip</b>. Everyone on the trip shares them.</li>
       <li>Tap <kbd>📅 Plan</kbd> on a place to put it on a day. The <b>Plan</b> tab shows every day; the arrows change the order.</li>
-      <li><b>✨ Suggest days</b> spreads the places you haven't planned over the trip, grouped by area. Tap <b>Undo</b> if you don't like it.</li>
       <li>The route button sorts a day into a short walking order, starting from its first place. The pin button shows that day on the map, numbered.</li>
       <li>The <kbd>📅 All days</kbd> chip above the List and Map picks one day to show, or the places not planned yet.</li>
-      <li>Days that have passed fold into <b>Past days</b>: ✓ for places you went, ! for ones you missed. Move a missed place with 📅, or let <b>Suggest days</b> fit it into the days left.</li>
+      <li>Days that have passed fold into <b>Past days</b>: ✓ for places you went, ! for ones you missed. Move a missed place with 📅, or take it off the plan with ×.</li>
       <li><b>My Today</b> is just for you. On a trip day it starts with that day's plan; tap the star on any place to add or remove it.</li>
       <li>The search box finds places by name or by what's in <i>Why go?</i>.</li>
     </ul>
@@ -689,6 +687,7 @@ const ICON = {
   up: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>',
   down: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>',
   x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>',
+  transit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="3"/><path d="M5 11h14M9 21l1.5-4M15 21l-1.5-4"/><circle cx="8.5" cy="14" r=".6" fill="currentColor"/><circle cx="15.5" cy="14" r=".6" fill="currentColor"/></svg>',
 };
 const DEMO_ITEMS = [
   { id: 'd1', name: 'Kuromon Ichiba Market', category: 'eat', about: 'Covered food market, 170-odd stalls', why: 'Grilled scallops and tuna skewers. Go before 11, it gets packed.', address: 'Nipponbashi, Chuo Ward, Osaka', lat: 34.6654, lng: 135.5066 },
@@ -1003,9 +1002,12 @@ function distLabel(p) {
   if (m < 1000) return `${Math.round(m / 10) * 10} m · ${Math.max(1, Math.round(m / 80))} min walk`;
   return m < 20000 ? `${(m / 1000).toFixed(1)} km` : `${Math.round(m / 1000)} km`;
 }
-function directionsUrl(p) {
+// Directions from wherever you are. mode 'transit' asks Google Maps for trains,
+// subway and buses, with times, platforms and fares.
+function directionsUrl(p, mode) {
   const u = new URL('https://www.google.com/maps/dir/');
   u.searchParams.set('api', '1');
+  if (mode) u.searchParams.set('travelmode', mode);
   if (p.placeId) {
     u.searchParams.set('destination', [p.name, p.address].filter(Boolean).join(', '));
     u.searchParams.set('destination_place_id', p.placeId);
@@ -1081,6 +1083,7 @@ function cardHTML(p) {
                 : `<p class="addr nopin">No pin yet: tap edit, then Find</p>`}
     <div class="actions">
       <a class="btn go" href="${esc(directionsUrl(p))}" target="_blank" rel="noopener">${ICON.go}Go</a>
+      <a class="btn sq" href="${esc(directionsUrl(p, 'transit'))}" target="_blank" rel="noopener" aria-label="Public transport directions in Google Maps">${ICON.transit}</a>
       <a class="btn sq" href="${esc(infoUrl(p))}" target="_blank" rel="noopener" aria-label="Open in Google Maps">${ICON.info}</a>
       ${hasPin(p) ? `<button class="btn sq" data-act="map" aria-label="Show on map">${ICON.map}</button>` : ''}
       <button class="btn sq${p.been ? ' on' : ''}" data-act="been" aria-label="${p.been ? 'Mark not visited' : 'Mark as been'}" aria-pressed="${!!p.been}">${ICON.check}</button>
@@ -1515,8 +1518,7 @@ function clearTodayTap() {
 let openUnplanned = false, openPast = false;
 
 function renderPlan() {
-  const el = $('#planDays'), hint = $('#planHint'), sug = $('#suggestBtn');
-  sug.hidden = true;
+  const el = $('#planDays'), hint = $('#planHint');
   if (!cfg.url && !cfg.demo) { hint.textContent = 'Connect to your Sheet to plan the trip.'; el.innerHTML = ''; return; }
   if (!planReady()) {
     hint.innerHTML = '<b>Your Sheet needs the new Code.gs to share a plan.</b> Paste it into Apps Script, then Deploy → Manage deployments → pencil → New version.';
@@ -1536,8 +1538,6 @@ function renderPlan() {
     : [past.length ? `${plural(upcoming.length, 'day')} to go` : plural(days.length, 'day'),
        `${items.length - unplanned.length - missedList.length} planned`, `${unplanned.length} not yet`,
        missedList.length ? `${missedList.length} missed` : ''].filter(Boolean).join(' · ');
-  // Suggest fills the days still to come, with unplanned places and ones missed on past days.
-  sug.hidden = !upcoming.length || !items.some(p => hasPin(p) && !p.been && (!dayOf(p) || missed(p)));
 
   const pastHTML = past.length ? (() => {
     const onPast = past.flatMap(dayItems), done = onPast.filter(p => p.been).length;
@@ -1548,7 +1548,7 @@ function renderPlan() {
         return `<div class="past-day"><h4>${esc(dayLabel(d))}${list.some(hasPin) ? `<button type="button" class="linkish" data-daymap="${d}">Map</button>` : ''}</h4>
           ${list.length ? `<ol class="prows">${list.map(p => prowHTML(p, 0, 0, true)).join('')}</ol>` : '<p class="empty-day">Nothing was planned.</p>'}</div>`;
       }).join('')}
-      ${missedList.length && upcoming.length ? '<p class="empty-day">Missed something? Tap 📅 to move it to a day still to come, or use ✨ Suggest days.</p>' : ''}
+      ${missedList.length && upcoming.length ? '<p class="empty-day">Missed something? Tap 📅 to move it to a day still to come, or × to take it off the plan.</p>' : ''}
     </details>`;
   })() : '';
 
@@ -1661,46 +1661,6 @@ function bestOrder(d) {
   const ch = renumber(d, ordered);
   if (!ch.length) toast('Already the shortest route I can find');
   else planChanges(ch, `${dayLabel(d)} sorted by route`);
-}
-
-// Group the unplanned pins into the trip's days by area, a similar number per day,
-// filling the emptiest days first. Visited places stay out.
-function suggestDays() {
-  const t = todayISO(), days = tripDays().filter(d => d >= t);
-  const pool = items.filter(p => (!dayOf(p) || missed(p)) && hasPin(p) && !p.been);
-  if (!days.length || !pool.length) return;
-  const k = Math.min(days.length, pool.length);
-  const mid = { lat: pool.reduce((s, p) => s + p.lat, 0) / pool.length, lng: pool.reduce((s, p) => s + p.lng, 0) / pool.length };
-  const near = (p, cs) => Math.min(...cs.map(c => metres(p, c)));
-  // Spread the starting centres out: the farthest place from those picked so far.
-  let centres = [pool.reduce((a, b) => metres(b, mid) > metres(a, mid) ? b : a)];
-  while (centres.length < k) centres.push(pool.reduce((a, b) => near(b, centres) > near(a, centres) ? b : a));
-  centres = centres.map(c => ({ lat: c.lat, lng: c.lng }));
-  let groups = [];
-  for (let iter = 0; iter < 12; iter++) {
-    groups = centres.map(() => []);
-    pool.forEach(p => { let bi = 0; centres.forEach((c, i) => { if (metres(p, c) < metres(p, centres[bi])) bi = i; }); groups[bi].push(p); });
-    centres = centres.map((c, i) => groups[i].length
-      ? { lat: groups[i].reduce((s, p) => s + p.lat, 0) / groups[i].length, lng: groups[i].reduce((s, p) => s + p.lng, 0) / groups[i].length } : c);
-  }
-  // Even the days out: each place goes to its nearest centre that still has room.
-  const cap = Math.ceil(pool.length / k) + 1;
-  groups = centres.map(() => []);
-  pool.flatMap(p => centres.map((c, i) => ({ p, i, m: metres(p, c) }))).sort((a, b) => a.m - b.m)
-    .forEach(({ p, i }) => { if (!p._g && groups[i].length < cap) { groups[i].push(p); p._g = true; } });
-  pool.forEach(p => delete p._g);
-  groups = groups.filter(g => g.length).sort((a, b) => b.length - a.length);
-  const emptiest = days.slice().sort((a, b) => dayItems(a).length - dayItems(b).length || (a < b ? -1 : 1));
-  const changes = [];
-  groups.forEach((g, gi) => {
-    const d = emptiest[gi], existing = dayItems(d);
-    const last = existing.reduce((m, x) => Math.max(m, x.dayOrder || 0), 0);
-    // Start the new stretch from the place nearest where the day already ends.
-    const tail = existing.filter(hasPin).pop();
-    if (tail) g.sort((a, b) => metres(tail, a) - metres(tail, b));
-    routeOrder(g).forEach((p, n) => changes.push({ id: p.id, day: d, dayOrder: last + n + 1 }));
-  });
-  planChanges(changes, `Planned ${changes.length} place${changes.length === 1 ? '' : 's'} over ${groups.length} day${groups.length === 1 ? '' : 's'}`);
 }
 
 const pickSheet = $('#pickSheet');
@@ -1970,7 +1930,6 @@ $('#tabList').onclick = () => setView('list');
 $('#tabMap').onclick = () => setView('map');
 $('#tabToday').onclick = () => setView('today');
 $('#tabPlan').onclick = () => setView('plan');
-$('#suggestBtn').onclick = suggestDays;
 $('#search').addEventListener('input', () => { query = $('#search').value.trim(); hidePeek(mainScope); render(); });
 document.addEventListener('change', e => {
   if (e.target.id !== 'dayPick') return;
