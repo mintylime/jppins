@@ -936,11 +936,12 @@ function render() {
 }
 
 function renderToday() {
-  const n = todayIds.size;
+  // Count what's actually here: places deleted on another phone leave their ids behind.
+  const list = todayVisible();
+  const n = list.length;
   const badge = $('#todayN');
   badge.textContent = n; badge.hidden = !n;
   $('#clearTodayBtn').hidden = !n;
-  const list = todayVisible();
   const el = $('#todayList');
   $('#todayEmpty').textContent = n ? '' : 'Nothing here yet. Tap the star on any place to plan it for today.';
   el.innerHTML = list.map(cardHTML).join('');
