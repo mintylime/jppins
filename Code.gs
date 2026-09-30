@@ -18,8 +18,11 @@
  */
 
 var SHEET_NAME = 'Places';
+// "day" is the trip date a place is planned for (yyyy-mm-dd, or blank);
+// "dayOrder" is its position in that day's route.
 var COLUMNS = ['id', 'added', 'name', 'category', 'about', 'why', 'address',
-               'lat', 'lng', 'placeId', 'link', 'been'];
+               'lat', 'lng', 'placeId', 'link', 'been', 'day', 'dayOrder'];
+var TEXT_COLUMNS = ['id', 'day'];   // stop Sheets turning ids into numbers and days into dates
 var CATEGORIES = ['eat', 'drink', 'see', 'shop', 'outdoors', 'other'];
 
 // ---------------------------------------------------------------- setup
@@ -53,9 +56,29 @@ function getSheet_() {
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_NAME);
     sheet.getRange(1, 1, 1, COLUMNS.length).setValues([COLUMNS]).setFontWeight('bold');
-    sheet.getRange('A:A').setNumberFormat('@');
+    PropertiesService.getScriptProperties().deleteProperty('COLUMNS');
   }
+  addMissingColumns_(sheet);
   return sheet;
+}
+
+// Sheets made by older versions lack newer columns: add them at the end, once.
+function addMissingColumns_(sheet) {
+  var props = PropertiesService.getScriptProperties();
+  if (props.getProperty('COLUMNS') === COLUMNS.join(',')) return;
+  var width = Math.max(sheet.getLastColumn(), 1);
+  var head = sheet.getRange(1, 1, 1, width).getValues()[0];
+  var missing = COLUMNS.filter(function (c) { return head.indexOf(c) < 0; });
+  if (missing.length) {
+    var start = head[0] === '' ? 1 : width + 1;
+    sheet.getRange(1, start, 1, missing.length).setValues([missing]).setFontWeight('bold');
+    head = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  }
+  TEXT_COLUMNS.forEach(function (c) {
+    var i = head.indexOf(c);
+    if (i >= 0) sheet.getRange(1, i + 1, sheet.getMaxRows(), 1).setNumberFormat('@');
+  });
+  props.setProperty('COLUMNS', COLUMNS.join(','));
 }
 
 // ---------------------------------------------------------------- web entry points
@@ -99,7 +122,7 @@ function ping_() {
   var keySet = !!PropertiesService.getScriptProperties().getProperty('KEY');
   var ready = keySet && !!ss;
   return {
-    ok: true, app: 'Trip Pins', version: 6,
+    ok: true, app: 'Trip Pins', version: 7,
     attachedToSheet: !!ss, setupDone: keySet,
     message: ready
       ? 'Your Sheet is reachable. Paste this page\'s address (ending in /exec) and your key into the app.'
@@ -125,6 +148,7 @@ function handle_(req) {
     else if (action === 'add') out = addItem_(req);
     else if (action === 'update') out = updateItem_(req);
     else if (action === 'delete') out = deleteItem_(req);
+    else if (action === 'plan') out = planItems_(req);
     else throw new Error('Unknown action: ' + action);
   } catch (err) {
     out = { ok: false, error: String(err && err.message || err) };
@@ -138,15 +162,31 @@ function handle_(req) {
 function getSettings_() {
   var p = PropertiesService.getScriptProperties();
   var trip = p.getProperty('TRIP'), near = p.getProperty('NEAR');
-  // "set" tells a blank value someone chose apart from one nobody has set yet.
-  return { trip: trip || '', near: near || '', set: trip !== null || near !== null };
+  return {
+    trip: trip || '', near: near || '',
+    start: p.getProperty('START') || '', end: p.getProperty('END') || '',
+    // "set" tells a blank value someone chose apart from one nobody has set yet.
+    set: trip !== null || near !== null,
+    plan: true   // tells the app this script can store a trip plan
+  };
 }
 
 function saveSettings_(req) {
   var p = PropertiesService.getScriptProperties();
   if (req.trip !== undefined) p.setProperty('TRIP', String(req.trip).slice(0, 80));
   if (req.near !== undefined) p.setProperty('NEAR', String(req.near).slice(0, 80));
+  if (req.start !== undefined) p.setProperty('START', day_(req.start));
+  if (req.end !== undefined) p.setProperty('END', day_(req.end));
   return getSettings_();
+}
+
+/** A trip date as yyyy-mm-dd, or '' for anything else. */
+function day_(v) {
+  if (Object.prototype.toString.call(v) === '[object Date]') {
+    return isNaN(v) ? '' : Utilities.formatDate(v, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  }
+  v = String(v == null ? '' : v).trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : '';
 }
 
 // ---------------------------------------------------------------- data
@@ -171,6 +211,8 @@ function clean_(o) {
   ['name', 'category', 'about', 'why', 'address', 'placeId', 'link'].forEach(function (k) {
     o[k] = o[k] == null ? '' : String(o[k]);
   });
+  o.day = day_(o.day);
+  o.dayOrder = o.day && o.dayOrder !== '' && o.dayOrder != null ? Number(o.dayOrder) : null;
   return o;
 }
 
@@ -267,8 +309,9 @@ function updateItem_(req) {
       head.forEach(function (h, i) {
         if (h === 'id' || h === 'added' || !(h in fields)) return;
         var v = fields[h];
-        if (h === 'lat' || h === 'lng') v = num_(v);
+        if (h === 'lat' || h === 'lng' || h === 'dayOrder') v = num_(v);
         if (h === 'been') v = v === true || v === 'true';
+        if (h === 'day') v = day_(v);
         values[r][i] = v == null ? '' : v;
       });
       sheet.getRange(r + 1, 1, 1, head.length).setValues([values[r]]);
@@ -278,6 +321,49 @@ function updateItem_(req) {
     }
   } finally { lock.releaseLock(); }
   return { ok: false, gone: true, error: 'That place was deleted on another phone.' };
+}
+
+/**
+ * Plan changes in one go: [{ id, day, dayOrder }, …]. A blank day takes the place
+ * off the plan. Only the day and dayOrder columns are written, so a note someone
+ * is editing on another phone at the same moment is left alone.
+ */
+function planItems_(req) {
+  var changes = req.changes || [];
+  if (typeof changes === 'string') changes = JSON.parse(changes);
+  var byId = {};
+  changes.forEach(function (c) { if (c && c.id != null) byId[String(c.id)] = c; });
+  var out = [];
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    var sheet = getSheet_();
+    var values = sheet.getDataRange().getValues();
+    var head = values[0];
+    var di = head.indexOf('day'), oi = head.indexOf('dayOrder');
+    if (di < 0 || oi < 0) throw new Error('The Sheet has no day columns yet. Reload the app.');
+    var dayCol = [], orderCol = [];
+    for (var r = 1; r < values.length; r++) {
+      var c = byId[String(values[r][0])];
+      if (c) {
+        values[r][di] = day_(c.day);
+        values[r][oi] = values[r][di] ? num_(c.dayOrder) : '';
+        if (values[r][oi] == null) values[r][oi] = '';
+        var o = {};
+        head.forEach(function (h, i) { o[h] = values[r][i]; });
+        out.push(clean_(o));
+        delete byId[String(values[r][0])];
+      }
+      dayCol.push([values[r][di]]);
+      orderCol.push([values[r][oi]]);
+    }
+    if (dayCol.length) {
+      sheet.getRange(2, di + 1, dayCol.length, 1).setValues(dayCol);
+      sheet.getRange(2, oi + 1, orderCol.length, 1).setValues(orderCol);
+    }
+  } finally { lock.releaseLock(); }
+  // Ids left over were deleted on another phone.
+  return { ok: true, items: out, gone: Object.keys(byId) };
 }
 
 function deleteItem_(req) {
