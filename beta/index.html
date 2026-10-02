@@ -1,0 +1,2470 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Trip Pins</title>
+<meta name="description" content="Save places you find, remember why, and get there with Google Maps.">
+<meta name="theme-color" content="#F6F1E7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#16130F" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Trip Pins">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+:root {
+  --bg: #F6F1E7; --card: #FFFDF8; --ink: #1F1B16; --muted: #6B6257; --line: #E6DDCC;
+  --accent: #D9480F; --accent-ink: #fff; --soft: #EFE7D8; --ok: #2F7D4F; --warn: #A15C00;
+  --eat: #D9480F; --drink: #7B3FA0; --see: #1F6F8B; --shop: #B07D00; --outdoors: #2F7D4F; --other: #6B6257;
+  --shadow: 0 1px 2px rgba(60,40,10,.06), 0 4px 14px rgba(60,40,10,.06);
+  --today-bg: #EAEAFB; --today-card: #FAFAFF; --today-line: #D3D2F2; --today-accent: #4A47C7;
+  --note-bg: #FFF6CC; --note-line: #EBD98A; --note-ink: #8A6A00;
+  --display: "Fraunces", Georgia, "Times New Roman", serif;
+  --body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #16130F; --card: #211D18; --ink: #F3EDE3; --muted: #A89F92; --line: #332D26;
+    --accent: #F0692E; --soft: #2A251F; --ok: #5DBB84; --warn: #E0A04A;
+    --eat: #F0692E; --drink: #B37ADB; --see: #4FA8C7; --shop: #D9A92E; --outdoors: #5DBB84; --other: #A89F92;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 14px rgba(0,0,0,.25);
+    --today-bg: #191A30; --today-card: #232447; --today-line: #383A66; --today-accent: #9694F0;
+  --note-bg: #2E2A17; --note-line: #4D4524; --note-ink: #E3C766;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #16130F; --card: #211D18; --ink: #F3EDE3; --muted: #A89F92; --line: #332D26;
+  --accent: #F0692E; --soft: #2A251F; --ok: #5DBB84; --warn: #E0A04A;
+  --eat: #F0692E; --drink: #B37ADB; --see: #4FA8C7; --shop: #D9A92E; --outdoors: #5DBB84; --other: #A89F92;
+  --today-bg: #191A30; --today-card: #232447; --today-line: #383A66; --today-accent: #9694F0;
+  --note-bg: #2E2A17; --note-line: #4D4524; --note-ink: #E3C766;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--bg); color: var(--ink); font: 16px/1.4 var(--body);
+  -webkit-tap-highlight-color: transparent; overscroll-behavior-y: contain;
+}
+button, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+a { color: inherit; }
+
+/* ---------- top bar ---------- */
+.top {
+  position: sticky; top: 0; z-index: 500; background: var(--bg);
+  padding: calc(env(safe-area-inset-top) + 10px) 16px 0;
+}
+.titlebar { display: flex; align-items: center; gap: 10px; }
+.titlebar h1 {
+  font: 700 26px/1.1 var(--display); margin: 0; flex: 1; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -.01em;
+}
+.betatag { flex: none; font: 700 11px/1 var(--body); letter-spacing: .06em; color: #fff; background: #C0392B; border-radius: 6px; padding: 5px 7px; }
+.sub { font-size: 13px; color: var(--muted); margin: 2px 0 10px; min-height: 18px; }
+.sub .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--ok); margin-right: 5px; vertical-align: 1px; }
+.sub.off .dot { background: var(--warn); }
+.icon-btn {
+  width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--line);
+  background: var(--card); display: grid; place-items: center; flex: none;
+}
+.icon-btn svg { width: 20px; height: 20px; }
+.icon-btn.spin svg { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.seg { display: flex; background: var(--soft); border-radius: 12px; padding: 3px; gap: 3px; }
+.seg button {
+  flex: 1; border: 0; background: transparent; padding: 8px 0; border-radius: 9px;
+  font-weight: 600; font-size: 14px; color: var(--muted); white-space: nowrap;
+}
+.seg button[aria-selected="true"] { background: var(--card); color: var(--ink); box-shadow: var(--shadow); }
+.seg button .n { margin-left: 4px; font-size: 12px; opacity: .7; }
+.seg.today-seg { background: var(--today-line); }
+.seg.today-seg button[aria-selected="true"] { background: var(--today-card); }
+
+.chips {
+  display: flex; gap: 6px; overflow-x: auto; padding: 10px 16px 10px; margin: 0 -16px;
+  scrollbar-width: none;
+}
+.chips::-webkit-scrollbar { display: none; }
+.chip {
+  flex: none; border: 1px solid var(--line); background: var(--card); border-radius: 999px;
+  padding: 6px 12px; font-size: 14px; white-space: nowrap;
+}
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.chip .n { color: var(--muted); margin-left: 3px; font-size: 12px; }
+.chip[aria-pressed="true"] .n { color: inherit; opacity: .7; }
+
+/* ---------- list ---------- */
+main { padding: 4px 16px calc(env(safe-area-inset-bottom) + 96px); }
+#mapView, #todayView { display: none; }
+body.show-map main { padding: 0; }
+body.show-map #listView { display: none; }
+body.show-map #mapView { display: block; }
+body.show-map .chips { padding-bottom: 8px; }
+body.show-today #listView, body.show-today #mapView { display: none; }
+body.show-today #todayView { display: block; }
+body.show-today .chips { display: none; }
+body.show-today main { padding: 0; }
+#todayView { background: var(--today-bg); border-radius: 18px 18px 0 0; min-height: calc(100dvh - var(--topH, 170px)); }
+#todayControls { padding: 10px 16px 0; }
+#todayListWrap { padding: 0 16px calc(env(safe-area-inset-bottom) + 96px); }
+#todayMapWrap { display: none; position: relative; }
+body.show-today.today-map #todayMapWrap { display: block; }
+body.show-today.today-map #todayListWrap { display: none; }
+.today-bar { display: flex; align-items: center; gap: 8px; padding: 10px 0 6px; }
+.today-bar .hint { flex: 1; color: var(--muted); font-size: 13px; }
+#todayView .card, #todayPeek .card { background: var(--today-card); border-color: var(--today-line); }
+
+/* ---------- search ---------- */
+.search { margin-top: 10px; padding: 9px 12px; font-size: 16px; }
+body.show-plan #searchBox, body.show-today #searchBox { display: none; }
+
+/* ---------- plan ---------- */
+#planView { display: none; }
+body.show-plan #listView, body.show-plan #mapView, body.show-plan #todayView { display: none; }
+body.show-plan #planView { display: block; }
+body.show-plan .chips { display: none; }
+.plan-top { display: flex; align-items: center; gap: 8px; margin: 8px 0 10px; }
+.plan-top .hint { flex: 1; margin: 0; }
+.day {
+  background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+  padding: 10px 12px; margin-bottom: 10px; box-shadow: var(--shadow);
+}
+.day.is-today { border: 2px solid var(--today-accent); }
+.day-head { display: flex; align-items: center; gap: 6px; min-height: 36px; }
+.day-head h3 { font: 600 18px/1.2 var(--display); margin: 0; flex: 1; }
+.day-head .n { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; margin-right: 4px; }
+.tag { display: inline-block; font: 700 11px/1 var(--body); color: #fff; background: var(--today-accent); border-radius: 6px; padding: 4px 6px; margin-left: 8px; vertical-align: 3px; }
+.btn.sq.sm { width: 36px; height: 36px; }
+.prows { list-style: none; margin: 6px 0 0; padding: 0; }
+.prow { display: flex; align-items: center; gap: 6px; padding: 5px 0; border-top: 1px solid var(--line); }
+.prow:first-child { border-top: 0; }
+.prow .num {
+  width: 24px; height: 24px; border-radius: 50%; background: var(--c); color: #fff;
+  font-size: 12px; font-weight: 700; display: grid; place-items: center; flex: none;
+}
+.prow .num.emo { background: transparent; font-size: 16px; }
+.prow .pname {
+  flex: 1; min-width: 0; text-align: left; border: 0; background: transparent; padding: 6px 0;
+  font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.prow.been .pname { text-decoration: line-through; opacity: .6; }
+.mv {
+  width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--line); background: var(--card);
+  display: grid; place-items: center; flex: none; font-size: 16px;
+}
+.mv svg { width: 16px; height: 16px; }
+.mv:disabled { opacity: .3; }
+.mv.unplan { color: var(--muted); border-color: transparent; background: transparent; }
+.empty-day { margin: 6px 0 2px; font-size: 13px; color: var(--muted); }
+details.unplanned summary, details.past-days summary { font: 600 16px/1.2 var(--display); cursor: pointer; padding: 6px 0; }
+details.unplanned summary .n, details.past-days summary .n { font: 13px var(--body); color: var(--muted); margin-left: 6px; }
+details.past-days { background: var(--soft); box-shadow: none; }
+.past-day { margin-top: 8px; }
+.past-day h4 { display: flex; align-items: center; justify-content: space-between; font: 600 14px/1.2 var(--body); color: var(--muted); margin: 4px 0 2px; }
+.prow .num.done { background: var(--ok); }
+.prow .num.miss { background: var(--warn); }
+.prow.missed .pname { color: var(--warn); }
+.cat-row { display: flex; align-items: center; gap: 8px; margin: 0 0 4px; }
+.cat-row .cat-tag { margin: 0; flex: 1; }
+.daychip {
+  flex: none; border: 1px solid var(--line); background: var(--soft); border-radius: 999px;
+  padding: 3px 10px; font-size: 12px; font-weight: 600; color: var(--muted);
+}
+.daychip.set { background: var(--card); color: var(--ink); border-color: var(--today-accent); }
+.daychip.missed { background: var(--card); color: var(--warn); border-color: var(--warn); }
+.daychip.done { color: var(--ok); }
+.daypick { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
+.daypick .btn { justify-content: space-between; height: 46px; font-size: 15px; }
+.daypick .btn[aria-pressed="true"] { border: 2px solid var(--today-accent); }
+.daypick .btn .n { color: var(--muted); font-weight: 400; font-size: 13px; }
+.pin.num span { font: 700 14px/1 var(--body); color: #fff; }
+.chip.plan { position: relative; }
+.chip.plan.on { background: var(--today-accent); border-color: var(--today-accent); color: #fff; }
+/* The real <select> sits invisibly over the chip, so a tap opens the phone's picker. */
+.chip.select select { position: absolute; inset: 0; width: 100%; opacity: 0; font-size: 16px; cursor: pointer; }
+.chip.near { border-style: dashed; }
+.hidden-note { text-align: center; font-size: 13px; color: var(--muted); margin: 6px 0 0; }
+.linkish { border: 0; background: none; padding: 4px; color: var(--accent); font-weight: 600; font-size: 13px; }
+
+/* ---------- notes ---------- */
+.card.note { background: var(--note-bg); border-color: var(--note-line); border-left-color: var(--note-ink); }
+.card.note .cat-tag { color: var(--note-ink); }
+.card.note .why { background: color-mix(in srgb, var(--note-line) 35%, var(--note-bg)); }
+.card.note .actions .btn { height: 36px; }
+.linkrow { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.linkchip, .notechip {
+  display: inline-flex; align-items: center; gap: 4px; max-width: 100%;
+  border: 1px solid var(--line); background: var(--card); border-radius: 999px;
+  padding: 4px 10px; font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.notechip { background: var(--note-bg); border-color: var(--note-line); }
+.linkchip button { border: 0; background: none; padding: 0 0 0 4px; font-size: 15px; line-height: 1; color: var(--muted); }
+.prow.nrow .num { background: var(--note-bg); border: 1px solid var(--note-line); font-size: 12px; }
+.prow.nrow .pname { font-weight: 600; color: var(--note-ink); }
+.linkpick { max-height: 40dvh; overflow-y: auto; margin-top: 8px; border: 1px solid var(--line); border-radius: 12px; }
+.lrow { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-top: 1px solid var(--line); font-size: 15px; }
+.lrow:first-child { border-top: 0; }
+.lrow input { width: 20px; height: 20px; accent-color: var(--accent); flex: none; }
+.lrow span:first-of-type { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lrow .n, .addrow .n { color: var(--muted); font-size: 12px; flex: none; }
+.note-new { background: var(--note-bg); border-color: var(--note-line); margin: 10px 0 0; height: 46px; }
+#addSearch { margin-top: 12px; }
+.addlist { margin-top: 8px; }
+.addrow {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+  border: 0; border-top: 1px solid var(--line); background: none; padding: 11px 4px; font-size: 15px;
+}
+.addrow:first-child { border-top: 0; }
+.addrow span:first-child { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.addlist h4 { font: 600 13px/1.2 var(--body); color: var(--muted); margin: 14px 0 4px; }
+button.num { border: 0; padding: 0; }
+.pick-sub { font: 600 13px/1.2 var(--body); color: var(--muted); margin: 10px 0 0; }
+.card.flash { outline: 3px solid var(--accent); outline-offset: 2px; transition: outline-color 1.5s; }
+.day-head.small { min-height: 32px; }
+.day-head.small h4 { flex: 1; font: 600 14px/1.2 var(--body); color: var(--muted); margin: 0; }
+
+.card {
+  background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+  padding: 14px 14px 10px; margin-bottom: 10px; box-shadow: var(--shadow);
+  border-left: 4px solid var(--c, var(--other));
+}
+.card.been { opacity: .6; }
+.card.been h3 { text-decoration: line-through; text-decoration-thickness: 1.5px; }
+.card-head { display: flex; gap: 8px; align-items: baseline; }
+.card h3 { font: 600 19px/1.2 var(--display); margin: 0; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.star {
+  flex: none; border: 0; background: transparent; padding: 2px; margin-top: 1px;
+  color: var(--muted); align-self: flex-start;
+}
+.star svg { width: 20px; height: 20px; display: block; }
+.star[aria-pressed="true"] { color: var(--today-accent); }
+.star[aria-pressed="true"] svg { fill: var(--today-accent); }
+.dist { font-size: 13px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.cat-tag { font-size: 12px; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; color: var(--c); margin: 0 0 4px; }
+.about { margin: 4px 0 0; font-size: 14px; color: var(--muted); }
+.why {
+  margin: 8px 0 0; font-size: 15px; padding: 8px 10px; background: var(--soft); border-radius: 10px;
+  white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.addr { margin: 6px 0 0; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nopin { color: var(--warn); }
+.actions { display: flex; gap: 6px; margin-top: 10px; }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 40px; padding: 0 12px; border-radius: 11px; border: 1px solid var(--line);
+  background: var(--card); text-decoration: none; font-size: 14px; font-weight: 600; white-space: nowrap;
+}
+.btn svg { width: 18px; height: 18px; flex: none; }
+.btn.go { flex: 1; background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-size: 15px; }
+.btn.sq { width: 44px; padding: 0; }
+.btn.on { color: var(--ok); border-color: var(--ok); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.ghost { background: transparent; }
+.btn.danger { color: #C0392B; }
+.btn:disabled { opacity: .5; }
+
+.cat-eat { --c: var(--eat); } .cat-drink { --c: var(--drink); } .cat-see { --c: var(--see); }
+.cat-shop { --c: var(--shop); } .cat-outdoors { --c: var(--outdoors); } .cat-other { --c: var(--other); }
+
+.empty { text-align: center; padding: 32px 12px; color: var(--muted); }
+.empty h2 { font: 600 22px/1.2 var(--display); color: var(--ink); margin: 0 0 8px; }
+.empty p { margin: 0 auto 10px; max-width: 34ch; }
+.welcome { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 20px; box-shadow: var(--shadow); }
+.welcome h2 { font: 700 24px/1.15 var(--display); margin: 0 0 8px; }
+.welcome p { color: var(--muted); margin: 0 0 14px; }
+.welcome .btn { width: 100%; margin-top: 8px; height: 46px; }
+.hint { font-size: 13px; color: var(--muted); }
+
+/* ---------- map ---------- */
+#map { height: calc(100dvh - var(--topH, 170px)); width: 100%; background: var(--soft); }
+.map-ctrls { position: absolute; right: 12px; top: 12px; z-index: 450; display: flex; flex-direction: column; gap: 8px; }
+.map-ctrls .icon-btn { box-shadow: var(--shadow); }
+#mapView { position: relative; }
+.pin {
+  width: 34px; height: 34px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg);
+  background: var(--c); border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.35);
+  display: grid; place-items: center;
+}
+.pin span { transform: rotate(45deg); font-size: 16px; line-height: 1; }
+.pin.been { filter: grayscale(1); opacity: .6; }
+.pin.sel { outline: 3px solid var(--ink); outline-offset: 1px; }
+.pin.ghost { opacity: .22; filter: grayscale(1); box-shadow: none; transform: rotate(-45deg) scale(.75); }
+.me { width: 18px; height: 18px; border-radius: 50%; background: #1A73E8; border: 3px solid #fff; box-shadow: 0 0 0 6px rgba(26,115,232,.2), 0 1px 4px rgba(0,0,0,.4); }
+#peek {
+  position: absolute; left: 10px; right: 10px; bottom: calc(env(safe-area-inset-bottom) + 12px); z-index: 460;
+  display: none;
+}
+#peek.open { display: block; }
+#peek .card { margin: 0; box-shadow: 0 8px 30px rgba(0,0,0,.25); }
+body.show-map .fabs { bottom: calc(env(safe-area-inset-bottom) + 16px); }
+body.show-map.peeking .fabs { display: none; }
+#todayMap { height: calc(100dvh - var(--topH, 170px) - var(--todayBarH, 0px)); width: 100%; background: var(--today-line); }
+#todayPeek {
+  position: absolute; left: 10px; right: 10px; bottom: calc(env(safe-area-inset-bottom) + 12px); z-index: 460;
+  display: none;
+}
+#todayPeek.open { display: block; }
+#todayPeek .card { margin: 0; box-shadow: 0 8px 30px rgba(0,0,0,.25); }
+.leaflet-container { font: inherit; }
+.leaflet-control-attribution { font-size: 10px; }
+
+/* ---------- add buttons ---------- */
+.fabs {
+  position: fixed; right: 16px; bottom: calc(env(safe-area-inset-bottom) + 20px); z-index: 600;
+  display: flex; align-items: center; gap: 10px;
+}
+#fab {
+  height: 56px; padding: 0 22px 0 18px; border-radius: 18px; border: 0;
+  background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: 17px;
+  display: flex; align-items: center; gap: 8px; box-shadow: 0 6px 20px rgba(217,72,15,.35);
+}
+#fab svg { width: 22px; height: 22px; }
+#noteFab {
+  height: 48px; padding: 0 16px; border-radius: 16px; border: 1px solid var(--note-line);
+  background: var(--note-bg); color: var(--ink); font-weight: 700; font-size: 15px; box-shadow: var(--shadow);
+}
+
+/* ---------- sheets ---------- */
+dialog.sheet {
+  border: 0; padding: 0; margin: auto 0 0; width: 100%; max-width: 100%;
+  max-height: 94dvh; border-radius: 20px 20px 0 0; background: var(--card); color: var(--ink);
+  box-shadow: 0 -10px 40px rgba(0,0,0,.25);
+}
+dialog.sheet::backdrop { background: rgba(20,15,10,.45); }
+@media (min-width: 640px) {
+  dialog.sheet { margin: auto; max-width: 520px; border-radius: 20px; }
+}
+.sheet-in { padding: 8px 16px 0; }
+.grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line); margin: 0 auto 10px; }
+.sheet-head { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.sheet-head h2 { font: 700 22px/1.2 var(--display); margin: 0; flex: 1; }
+label.f { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin: 14px 0 6px; }
+.in {
+  width: 100%; border: 1px solid var(--line); background: var(--bg); border-radius: 12px;
+  padding: 11px 12px; font-size: 16px; outline: none;
+}
+.in:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent); }
+textarea.in { resize: vertical; min-height: 76px; }
+#q { min-height: 52px; font-size: 15px; }
+.pastebox { display: flex; gap: 8px; }
+.pastebox .in { flex: 1; }
+.status {
+  margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: var(--soft); font-size: 14px;
+  display: none; gap: 8px; align-items: flex-start;
+}
+.status.show { display: flex; }
+.status.ok { background: color-mix(in srgb, var(--ok) 14%, var(--card)); }
+.status.bad { background: color-mix(in srgb, var(--warn) 16%, var(--card)); }
+.status > div > b { display: block; }
+.status small { color: var(--muted); display: block; }
+.status a { color: var(--accent); font-weight: 600; }
+.tips { margin: 8px 0 0; padding-left: 18px; font-size: 13px; }
+.tips li { margin: 6px 0; }
+.spinner { width: 16px; height: 16px; border: 2px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; flex: none; margin-top: 2px; }
+.catpick { display: flex; flex-wrap: wrap; gap: 6px; }
+.catpick button { border: 1px solid var(--line); background: var(--bg); border-radius: 999px; padding: 7px 12px; font-size: 14px; }
+.catpick button[aria-pressed="true"] { background: var(--c); border-color: var(--c); color: #fff; }
+.row { display: flex; gap: 8px; }
+.row > * { flex: 1; }
+.sheet-foot {
+  display: flex; gap: 8px; margin: 18px -16px 0; padding: 12px 16px calc(env(safe-area-inset-bottom) + 4px);
+  position: sticky; bottom: 0; background: var(--card); border-top: 1px solid var(--line);
+}
+.sheet-foot .btn { height: 48px; font-size: 16px; }
+.sheet-foot .primary { flex: 1; }
+details.more { margin-top: 14px; }
+details.more summary { font-size: 14px; color: var(--muted); cursor: pointer; }
+.sec { font: 700 17px/1.2 var(--display); margin: 22px 0 2px; }
+#setSheet .sec:first-of-type { margin-top: 4px; }
+.sep { border-top: 1px solid var(--line); margin-top: 22px; padding-top: 4px; }
+.btn.wide { width: 100%; height: 48px; margin-top: 14px; font-size: 16px; }
+.conn-ok { margin: 6px 0 0; font-size: 15px; }
+.conn-ok .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); margin-right: 7px; vertical-align: 1px; }
+.kv { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 13px; }
+.kv span { width: 30px; color: var(--muted); flex: none; }
+.kv code { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: var(--soft); padding: 8px; border-radius: 8px; font-size: 12px; }
+.kv .btn { height: 34px; }
+.pad-bottom { height: calc(env(safe-area-inset-bottom) + 16px); }
+.status .btn { margin-top: 8px; }
+.check { display: flex; align-items: center; gap: 10px; margin-top: 14px; font-size: 15px; }
+.check input { width: 20px; height: 20px; accent-color: var(--accent); }
+
+#toast {
+  position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 90px); transform: translate(-50%, 20px);
+  background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-size: 15px;
+  opacity: 0; pointer-events: none; transition: .25s; z-index: 2000; max-width: calc(100% - 32px);
+  display: flex; align-items: center; gap: 14px;
+}
+#toast.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+#toast button {
+  border: 0; background: transparent; color: var(--accent); font-weight: 700; font-size: 15px;
+  padding: 6px 2px; margin: -6px 0; white-space: nowrap;
+}
+.btn.danger.armed { background: #C0392B; border-color: #C0392B; color: #fff; }
+/* ---------- help ---------- */
+#helpSheet .seg { margin-bottom: 4px; }
+.help ol, .help ul { margin: 6px 0 0; padding-left: 20px; font-size: 15px; line-height: 1.45; }
+.help li { margin: 7px 0; }
+.help p { font-size: 15px; line-height: 1.45; margin: 8px 0 0; }
+.help .note { font-size: 13px; color: var(--muted); background: var(--soft); border-radius: 10px; padding: 9px 11px; margin-top: 10px; }
+.help kbd { font: inherit; font-weight: 700; }
+.help [data-os] { display: none; }
+#helpSheet[data-os="android"] [data-os="android"], #helpSheet[data-os="ios"] [data-os="ios"] { display: revert; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+</style>
+</head>
+<body>
+
+<header class="top" id="top">
+  <div class="titlebar">
+    <h1 id="tripTitle">Trip Pins</h1>
+    <span class="betatag" id="betaTag" hidden title="Test version: changes to places and notes still go to your Sheet">TEST</span>
+    <button class="icon-btn" id="syncBtn" aria-label="Refresh">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+    </button>
+    <button class="icon-btn" id="helpBtn" aria-label="How to use Trip Pins">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 2.5-3 4.5"/><path d="M12 17.5h.01"/></svg>
+    </button>
+    <button class="icon-btn" id="settingsBtn" aria-label="Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+  </div>
+  <div class="sub" id="sub"></div>
+  <div class="seg" role="tablist">
+    <button role="tab" id="tabList" aria-selected="true">List</button>
+    <button role="tab" id="tabMap" aria-selected="false">Map</button>
+    <button role="tab" id="tabPlan" aria-selected="false">Plan</button>
+    <button role="tab" id="tabToday" aria-selected="false">My Today<span class="n" id="todayN" hidden>0</span></button>
+  </div>
+  <div class="searchbox" id="searchBox">
+    <input class="in search" id="search" type="search" placeholder="Search names and notes" enterkeyhint="search" autocomplete="off" aria-label="Search places">
+  </div>
+  <div class="chips" id="chips"></div>
+</header>
+
+<main>
+  <section id="listView"><div id="list"></div></section>
+  <section id="mapView">
+    <div id="map"></div>
+    <div class="map-ctrls">
+      <button class="icon-btn" id="locBtn" aria-label="Show where I am">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+      </button>
+      <button class="icon-btn" id="fitBtn" aria-label="Show all places">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+      </button>
+    </div>
+    <div id="peek"></div>
+  </section>
+  <section id="planView">
+    <div class="plan-top">
+      <p class="hint" id="planHint"></p>
+    </div>
+    <div id="planDays"></div>
+  </section>
+  <section id="todayView">
+    <div id="todayControls">
+      <div class="seg today-seg" role="tablist" aria-label="Today view">
+        <button role="tab" id="todayTabList" aria-selected="true">List</button>
+        <button role="tab" id="todayTabMap" aria-selected="false">Map</button>
+      </div>
+      <div class="today-bar">
+        <span class="hint" id="todayEmpty"></span>
+        <button type="button" class="btn" id="loadPlanBtn" data-load-plan hidden>📅 Add today’s plan</button>
+        <button type="button" class="btn danger" id="clearTodayBtn" data-clear-today hidden>Clear day</button>
+      </div>
+    </div>
+    <div id="todayListWrap"><div id="todayList"></div></div>
+    <div id="todayMapWrap">
+      <div id="todayMap"></div>
+      <div class="map-ctrls">
+        <button class="icon-btn" id="todayLocBtn" aria-label="Show where I am">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+        </button>
+        <button class="icon-btn" id="todayFitBtn" aria-label="Show today's places">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+        </button>
+      </div>
+      <div id="todayPeek"></div>
+    </div>
+  </section>
+</main>
+
+<div class="fabs">
+  <button id="noteFab" aria-label="Add a note" hidden>📝 Note</button>
+  <button id="fab" aria-label="Add a place">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add
+  </button>
+</div>
+
+<!-- Add / edit sheet -->
+<dialog class="sheet" id="placeSheet">
+  <form class="sheet-in" id="placeForm" method="dialog" autocomplete="off">
+    <div class="grab"></div>
+    <div class="sheet-head">
+      <h2 id="placeTitle">Add a place</h2>
+      <button type="button" class="btn ghost" data-close autofocus>Cancel</button>
+    </div>
+
+    <div id="findBox">
+      <label class="f" for="q">Google Maps link, or a place name</label>
+      <div class="pastebox">
+        <textarea class="in" id="q" rows="2" enterkeyhint="done" placeholder="maps.app.goo.gl/… or “Kuromon Market”"></textarea>
+        <button type="button" class="btn" id="pasteBtn">Paste</button>
+      </div>
+    </div>
+    <div class="status" id="status" role="status"></div>
+
+    <label class="f" for="fWhy">Why go?</label>
+    <textarea class="in" id="fWhy" rows="2" placeholder="Best grilled scallops. Go before 11."></textarea>
+
+    <label class="f">Type</label>
+    <div class="catpick" id="catPick"></div>
+
+    <label class="f" for="fName">Name</label>
+    <input class="in" id="fName" placeholder="Place name">
+
+    <label class="f" for="fAbout">What it is</label>
+    <input class="in" id="fAbout" placeholder="Seafood market, standing sushi bar…">
+
+    <label class="f" for="fAddr">Where</label>
+    <div class="pastebox">
+      <input class="in" id="fAddr" placeholder="Address or area">
+      <button type="button" class="btn" id="relocBtn" hidden>Find</button>
+    </div>
+
+    <label class="check" id="beenRow" hidden><input type="checkbox" id="fBeen"> Been there</label>
+
+    <div class="sheet-foot">
+      <button type="button" class="btn danger" id="delBtn" hidden>Delete</button>
+      <button type="submit" class="btn primary" id="saveBtn">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Add or edit a note -->
+<dialog class="sheet" id="noteSheet">
+  <form class="sheet-in" id="noteForm" method="dialog" autocomplete="off">
+    <div class="grab"></div>
+    <div class="sheet-head">
+      <h2 id="noteHead">New note</h2>
+      <button type="button" class="btn ghost" data-close>Cancel</button>
+    </div>
+    <label class="f" for="nTitle">Title</label>
+    <input class="in" id="nTitle" maxlength="120" placeholder="Buy souvenirs at the market">
+    <label class="f" for="nText">Note</label>
+    <textarea class="in" id="nText" rows="4" placeholder="Anything to remember: what, where, for whom…"></textarea>
+    <div id="nDayRow">
+      <label class="f" for="nDay">Day</label>
+      <select class="in" id="nDay"></select>
+    </div>
+    <label class="f">Places</label>
+    <div class="linkrow" id="nLinks"></div>
+    <details class="more" id="nLinkBox">
+      <summary>＋ Link places</summary>
+      <input class="in search" id="nLinkSearch" type="search" placeholder="Find a place" aria-label="Find a place to link">
+      <div class="linkpick" id="nLinkPick"></div>
+    </details>
+    <div class="status" id="noteStatus"></div>
+    <div class="sheet-foot">
+      <button type="button" class="btn danger" id="noteDel" hidden>Delete</button>
+      <button type="submit" class="btn primary" id="noteSave">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Add a place or a note to one day of the plan -->
+<dialog class="sheet" id="addSheet">
+  <div class="sheet-in">
+    <div class="grab"></div>
+    <div class="sheet-head">
+      <h2 id="addTitle">Add to a day</h2>
+      <button type="button" class="btn ghost" data-close>Done</button>
+    </div>
+    <p class="hint" id="addHint"></p>
+    <button type="button" class="btn wide note-new" id="addNewNote" data-newnote-day>📝 New note for this day</button>
+    <input class="in search" id="addSearch" type="search" placeholder="Find a place or note" aria-label="Find a place or note">
+    <div class="addlist" id="addList"></div>
+    <div class="pad-bottom"></div>
+  </div>
+</dialog>
+
+<!-- Pick a day for a place -->
+<dialog class="sheet" id="pickSheet">
+  <div class="sheet-in">
+    <div class="grab"></div>
+    <div class="sheet-head">
+      <h2 id="pickTitle">Plan</h2>
+      <button type="button" class="btn ghost" data-close autofocus>Close</button>
+    </div>
+    <p class="hint">Pick a day. Everyone on this trip sees the plan.</p>
+    <div class="daypick" id="pickDays"></div>
+    <div class="pad-bottom"></div>
+  </div>
+</dialog>
+
+<!-- Help sheet -->
+<dialog class="sheet" id="helpSheet" data-os="android">
+  <div class="sheet-in help">
+    <div class="grab"></div>
+    <div class="sheet-head">
+      <h2>How to use Trip Pins</h2>
+      <button type="button" class="btn ghost" data-close autofocus>Close</button>
+    </div>
+    <div class="seg" role="tablist" aria-label="Your phone">
+      <button role="tab" data-help-os="android" aria-selected="true">Android</button>
+      <button role="tab" data-help-os="ios" aria-selected="false">iPhone</button>
+    </div>
+
+    <h3 class="sec">1. Join the trip</h3>
+    <ol>
+      <li>Got an invite link by WhatsApp or text? Just open it. You're connected; there's nothing to type.</li>
+      <li>No link? Tap <kbd>Connect</kbd>, paste the URL and the Key from the person who set up the trip, and tap <kbd>Connect</kbd>.</li>
+    </ol>
+
+    <h3 class="sec">2. Put it on your home screen</h3>
+    <ol data-os="android">
+      <li>In Chrome, tap the menu <kbd>⋮</kbd> (top right).</li>
+      <li>Tap <kbd>Add to Home screen</kbd> or <kbd>Install</kbd>.</li>
+    </ol>
+    <p data-os="android">Now it opens like a normal app, and it remembers the trip.</p>
+    <ol data-os="ios">
+      <li>Open this page in <b>Safari</b> (other browsers can't do this step).</li>
+      <li>Tap the Share button (the square with an arrow), then <kbd>Add to Home Screen</kbd> → <kbd>Add</kbd>.</li>
+      <li>Open Trip Pins from your home screen. It starts blank: that's normal on iPhone.</li>
+      <li>Go back to WhatsApp or Messages, press and hold the invite link, and tap <kbd>Copy</kbd>.</li>
+      <li>In Trip Pins, tap <kbd>Connect</kbd> → <kbd>Paste</kbd> → <kbd>Connect</kbd>. You only do this once.</li>
+    </ol>
+
+    <h3 class="sec">3. Save places from Google Maps</h3>
+    <ol data-os="android">
+      <li>In the Google Maps app, open a place you like.</li>
+      <li>Tap <kbd>Share</kbd>, then pick <kbd>Trip Pins</kbd>.</li>
+      <li>Type a quick note on why you want to go, and tap <kbd>Save</kbd>.</li>
+    </ol>
+    <p class="note" data-os="android">Trip Pins not in the share menu? Open it once from your home screen, then try again. It may also be hiding under <b>More</b>.</p>
+    <ol data-os="ios">
+      <li>In the Google Maps app, open a place you like.</li>
+      <li>Tap <kbd>Share</kbd> → <kbd>Copy link</kbd>.</li>
+      <li>Open Trip Pins, tap <kbd>+ Add</kbd>, then <kbd>Paste</kbd>. It looks the place up for you.</li>
+      <li>Type a quick note on why you want to go, and tap <kbd>Save</kbd>.</li>
+    </ol>
+    <p class="note" data-os="ios">iPhones don't let web apps sit in the share menu. If you save lots of places, ask whoever set up the trip for the "Save to Trip Pins" Shortcut; it saves straight from Google Maps' share menu.</p>
+    <p>No link handy? Tap <kbd>+ Add</kbd> and type a name, like “Kuromon Market”.</p>
+
+    <h3 class="sec">4. Using the shared list</h3>
+    <ul>
+      <li><b>Go</b> opens Google Maps with directions to that spot. <b>🚆</b> opens public transport directions (trains, subway, buses) from where you are.</li>
+      <li><b>List</b>: tap <kbd>🧭 Nearest first</kbd> (and allow location) when you're out on the trip. <b>Map</b> shows everyone's places as coloured pins, and you as a blue dot.</li>
+      <li>Visited places are hidden in the List and faded on the Map. <kbd>✓ Show visited</kbd> brings them back.</li>
+      <li><b>✓</b> marks a place as visited. The pencil fixes a name, a note or a typo.</li>
+      <li>It's one live list. Anything you add, edit or tick shows on everyone else's phone too, within about a minute and a half.</li>
+    </ul>
+
+    <h3 class="sec">5. Plan the days</h3>
+    <ul>
+      <li>Set the trip's first and last day in <kbd>⚙</kbd> → <b>This trip</b>. Everyone on the trip shares them.</li>
+      <li>Tap <kbd>📅 Plan</kbd> on a place to put it on a day. The <b>Plan</b> tab shows every day; the arrows change the order.</li>
+      <li>The route button sorts a day into a short walking order, starting from its first place. The pin button shows that day on the map, numbered.</li>
+      <li>The <kbd>📅 All days</kbd> chip above the List and Map picks one day to show, or the places not planned yet.</li>
+      <li>Days that have passed fold into <b>Past days</b>: ✓ for places you went, ! for ones you missed. Tap ✓ or ! to correct it, and <b>+</b> on a past day to add somewhere you went but didn't plan (it's marked visited).</li>
+    </ul>
+
+    <h3 class="sec">6. Notes</h3>
+    <ul>
+      <li><kbd>📝 Note</kbd> (next to Add) writes a note: a title, any text, and optionally a day and some places. “Buy souvenirs at the market”.</li>
+      <li>Put a note on a day and it sits at the top of that day in Plan, and in My Today on the day. The <b>+</b> on any day adds a note there too.</li>
+      <li>Notes not on a day show in the List. Ones on a day stay in Plan; <kbd>📝 Show notes on days</kbd> brings them into the List.</li>
+      <li>A place with notes shows them as yellow chips; tap one to read or edit it. Tap a place on a note to find it on the map.</li>
+      <li>Everyone on the trip sees the same notes.</li>
+      <li><b>My Today</b> is just for you. On a trip day it starts with that day's plan; tap the star on any place to add or remove it.</li>
+      <li>The search box finds places by name or by what's in <i>Why go?</i>.</li>
+    </ul>
+
+    <h3 class="sec">Stuck?</h3>
+    <ul>
+      <li>Places look out of date? Tap the refresh arrow at the top.</li>
+      <li>“Key changed” message? Ask the organiser for a fresh invite link and open it.</li>
+      <li>Want to bring someone else in? <kbd>⚙</kbd> → <kbd>Add another phone</kbd> sends them a link.</li>
+    </ul>
+    <div class="pad-bottom"></div>
+  </div>
+</dialog>
+
+<!-- Settings sheet -->
+<dialog class="sheet" id="setSheet">
+  <div class="sheet-in">
+    <div class="grab"></div>
+    <div class="sheet-head">
+      <h2>Settings</h2>
+      <button type="button" class="btn ghost" data-close autofocus>Close</button>
+    </div>
+    <div class="status" id="joinStatus"></div>
+
+    <!-- Trip details: shared through the Sheet (or local in demo) -->
+    <form id="tripForm" autocomplete="off">
+      <h3 class="sec">This trip</h3>
+      <p class="hint" id="tripHint">Shared with every phone on this Sheet.</p>
+      <label class="f" for="sTrip">Trip name</label>
+      <input class="in" id="sTrip" placeholder="Osaka, October">
+      <label class="f" for="sNear">Where you're travelling</label>
+      <input class="in" id="sNear" placeholder="Osaka, Japan">
+      <p class="hint">Helps typed names like “Kuromon Market” find the right spot.</p>
+      <div class="row">
+        <div><label class="f" for="sStart">First day</label><input class="in" type="date" id="sStart"></div>
+        <div><label class="f" for="sEnd">Last day</label><input class="in" type="date" id="sEnd"></div>
+      </div>
+      <p class="hint">Sets the days you can plan in the Plan tab.</p>
+      <div class="status" id="tripStatus"></div>
+      <button type="submit" class="btn primary wide" id="tripSave">Save trip details</button>
+    </form>
+
+    <!-- Connected: share with other phones -->
+    <section id="connBox" class="sep">
+      <h3 class="sec">Your Sheet</h3>
+      <p class="conn-ok"><span class="dot"></span>This phone is connected.</p>
+      <button type="button" class="btn primary wide" id="inviteBtn">Add another phone</button>
+      <p class="hint">Sends a link. Open it on the other phone and it connects by itself: no typing.</p>
+      <details class="more">
+        <summary>URL and key (for the iPhone Shortcut)</summary>
+        <div class="kv"><span>URL</span><code id="kvUrl"></code><button type="button" class="btn" data-copy="kvUrl">Copy</button></div>
+        <div class="kv"><span>Key</span><code id="kvKey"></code><button type="button" class="btn" data-copy="kvKey">Copy</button></div>
+      </details>
+      <button type="button" class="btn danger wide" id="disconnectBtn">Disconnect this phone</button>
+    </section>
+
+    <!-- Not connected: join with a link, or first-time setup -->
+    <form id="connForm" autocomplete="off">
+      <h3 class="sec">Connect</h3>
+      <p class="hint"><b>Joining?</b> Paste the link another phone sent you.<br><b>First phone?</b> Paste the web app URL from Apps Script, then the key.</p>
+      <label class="f" for="sUrl">Connection link or web app URL</label>
+      <div class="pastebox">
+        <input class="in" id="sUrl" inputmode="url" placeholder="https://…">
+        <button type="button" class="btn" id="pasteLinkBtn">Paste</button>
+      </div>
+      <div id="keyRow">
+        <label class="f" for="sKey">Key</label>
+        <input class="in" id="sKey" placeholder="from the Apps Script log">
+      </div>
+      <div class="status" id="setStatus"></div>
+      <div class="sheet-foot">
+        <button type="button" class="btn" id="demoBtn">Try demo</button>
+        <button type="submit" class="btn primary" id="connectBtn">Connect</button>
+      </div>
+    </form>
+    <div class="pad-bottom"></div>
+  </div>
+</dialog>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" defer></script>
+<script>
+(() => {
+'use strict';
+
+// ---------------------------------------------------------------- constants
+const CATS = {
+  eat:      { label: 'Eat',      emoji: '🍜' },
+  drink:    { label: 'Drink',    emoji: '🍻' },
+  see:      { label: 'See',      emoji: '🏛️' },
+  shop:     { label: 'Shop',     emoji: '🛍️' },
+  outdoors: { label: 'Outdoors', emoji: '🌳' },
+  other:    { label: 'Other',    emoji: '📍' },
+};
+const ICON = {
+  go: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>',
+  info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6M10 14L21 3"/></svg>',
+  map: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>',
+  edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
+  star: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l2.6 5.6 6 .7-4.4 4.2 1.2 6-5.4-3-5.4 3 1.2-6-4.4-4.2 6-.7z"/></svg>',
+  route: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="2.5"/><circle cx="18" cy="5" r="2.5"/><path d="M8.5 19H16a3.5 3.5 0 0 0 0-7H8a3.5 3.5 0 0 1 0-7h7.5"/></svg>',
+  up: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>',
+  down: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>',
+  x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>',
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  transit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="3"/><path d="M5 11h14M9 21l1.5-4M15 21l-1.5-4"/><circle cx="8.5" cy="14" r=".6" fill="currentColor"/><circle cx="15.5" cy="14" r=".6" fill="currentColor"/></svg>',
+};
+const DEMO_ITEMS = [
+  { id: 'd1', name: 'Kuromon Ichiba Market', category: 'eat', about: 'Covered food market, 170-odd stalls', why: 'Grilled scallops and tuna skewers. Go before 11, it gets packed.', address: 'Nipponbashi, Chuo Ward, Osaka', lat: 34.6654, lng: 135.5066 },
+  { id: 'd2', name: 'Osaka Castle', category: 'see', about: 'Castle and park, museum inside', why: 'Top-floor view over the city. Walk the moat at sunset.', address: '1-1 Osakajo, Chuo Ward, Osaka', lat: 34.6873, lng: 135.5262 },
+  { id: 'd3', name: 'Dotonbori', category: 'see', about: 'Canal-side neon street', why: 'Glico sign after dark; takoyaki from a street stall.', address: 'Dotonbori, Chuo Ward, Osaka', lat: 34.6687, lng: 135.5013 },
+  { id: 'd4', name: 'Shinsekai', category: 'eat', about: 'Retro district under Tsutenkaku tower', why: 'Kushikatsu. No double-dipping the sauce!', address: 'Ebisuhigashi, Naniwa Ward, Osaka', lat: 34.6525, lng: 135.5063 },
+  { id: 'd5', name: 'Umeda Sky Building', category: 'see', about: 'Open-air observatory, 173 m up', why: 'Floating Garden at dusk.', address: '1-1-88 Oyodonaka, Kita Ward, Osaka', lat: 34.7053, lng: 135.4903 },
+  { id: 'd6', name: 'Nakazakicho', category: 'drink', about: 'Old-house cafés and vintage shops', why: 'Slow coffee morning, away from the crowds.', address: 'Nakazaki, Kita Ward, Osaka', lat: 34.7090, lng: 135.5060 },
+  { id: 'd7', name: 'Minoo Falls', category: 'outdoors', about: '33 m waterfall, 3 km forest walk', why: 'Half-day escape. Try the maple leaf tempura.', address: 'Minoo Park, Minoh', lat: 34.8530, lng: 135.4720, been: true },
+];
+const DEMO_NOTES = [
+  { id: 'n1', added: '2026-01-01T00:00:00Z', title: 'Buy souvenirs at the market', text: 'Knives for Dad, matcha sweets for the office.', day: '', links: 'd1' },
+  { id: 'n2', added: '2026-01-02T00:00:00Z', title: 'Get an ICOCA card', text: 'Top up ¥3000 at any station machine. Works on trains and in convenience stores.', day: '', links: '' },
+];
+
+// ---------------------------------------------------------------- tiny helpers
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+// The test copy lives in a beta/ folder on the same site. It keeps its own storage, so
+// trying it never touches the main app's settings, offline copy or My Today. On its
+// first run it borrows the main app's Sheet connection, so there's nothing to set up.
+const BETA = /\/beta\/(index\.html)?$/.test(location.pathname);
+const NS = BETA ? 'tpbeta.' : 'tp.';
+try { if (BETA && localStorage.getItem(NS + 'cfg') == null && localStorage.getItem('tp.cfg') != null) localStorage.setItem(NS + 'cfg', localStorage.getItem('tp.cfg')); } catch (e) {}
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(NS + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(NS + k, JSON.stringify(v)); } catch (e) {} },
+};
+let toastTimer;
+function toast(msg, action) {
+  const t = $('#toast');
+  t.innerHTML = `<span>${esc(msg)}</span>` + (action ? `<button type="button">${esc(action.label)}</button>` : '');
+  if (action) t.querySelector('button').onclick = () => { t.classList.remove('show'); action.fn(); };
+  t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), action ? 7000 : 2600);
+}
+function catOf(p) { return CATS[p.category] ? p.category : 'other'; }
+function hasPin(p) { return p.lat != null && p.lng != null && p.lat !== '' && isFinite(p.lat); }
+
+// ---------------------------------------------------------------- state
+const cfg = Object.assign({ url: '', key: '', trip: '', near: '', start: '', end: '', planReady: false,
+  demo: false, demoTrip: '', demoNear: 'Osaka, Japan', demoStart: '', demoEnd: '' }, store.get('cfg', {}));
+const tripName = () => cfg.demo ? cfg.demoTrip : cfg.trip;
+const tripArea = () => cfg.demo ? cfg.demoNear : cfg.near;
+const connected = () => !!cfg.url && !cfg.demo;
+
+// ---------------------------------------------------------------- trip days
+// Days are local calendar dates as yyyy-mm-dd, so "today" means today where the phone is.
+const isoDay = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const todayISO = () => isoDay(new Date());
+function addDays(iso, n) { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return isoDay(d); }
+const tripSpan = (s, e) => Math.round((new Date(e + 'T12:00:00') - new Date(s + 'T12:00:00')) / 864e5) + 1;
+// The demo trip runs from today for four days, so the plan and My Today have something to show.
+const tripStart = () => cfg.demo ? (cfg.demoStart || todayISO()) : cfg.start;
+const tripEnd = () => cfg.demo ? (cfg.demoEnd || addDays(todayISO(), 3)) : cfg.end;
+let daysMemo = { key: null, list: [], set: new Set() };
+function tripDays() {
+  const s = tripStart(), e = tripEnd(), key = s + '|' + e;
+  if (daysMemo.key !== key) {
+    const list = [];
+    if (s && e && e >= s) for (let d = s; d <= e && list.length < 60; d = addDays(d, 1)) list.push(d);
+    daysMemo = { key, list, set: new Set(list) };
+  }
+  return daysMemo.list;
+}
+// A day outside the trip's dates (the dates were changed) counts as not planned.
+function dayOf(p) { tripDays(); return p.day && daysMemo.set.has(p.day) ? p.day : ''; }
+const byOrder = (a, b) => (a.dayOrder ?? 1e9) - (b.dayOrder ?? 1e9) || String(a.name).localeCompare(String(b.name));
+function dayItems(iso) { return items.filter(p => dayOf(p) === iso).sort(byOrder); }
+// Past days: the ones before today. A place left unvisited on a past day was missed.
+const isPastDay = d => d < todayISO();
+const missed = p => { const d = dayOf(p); return !!d && isPastDay(d) && !p.been; };
+// Notes: on a day in the order they were written; linked to places by id.
+const byAdded = (a, b) => String(a.added || a.id).localeCompare(String(b.added || b.id));
+function dayNotes(iso) { return notes.filter(n => dayOf(n) === iso).sort(byAdded); }
+const noteLinkIds = n => String(n.links || '').split(',').filter(Boolean);
+const linkedPlaces = n => noteLinkIds(n).map(id => items.find(p => p.id === id)).filter(Boolean);
+const notesFor = p => notesReady() ? notes.filter(n => noteLinkIds(n).includes(p.id)) : [];
+// Days you can still plan: today onward, or every day once the trip is over.
+function openDays() { const t = todayISO(), all = tripDays(), left = all.filter(d => d >= t); return left.length ? left : all; }
+// "Wed 30 Sep": built by hand, since browsers disagree on commas and "Sept".
+function dayLabel(iso) {
+  const d = new Date(iso + 'T12:00:00');
+  const part = o => d.toLocaleDateString('en-GB', o).slice(0, 3);
+  return `${part({ weekday: 'short' })} ${d.getDate()} ${part({ month: 'short' })}`;
+}
+// Plan needs trip dates, and (on a real Sheet) a Code.gs new enough to store days.
+const planReady = () => cfg.demo || cfg.planReady;
+// Notes need a Code.gs new enough to keep them (a Notes tab in the Sheet).
+const notesReady = () => cfg.demo || cfg.notesReady;
+const planOn = () => planReady() && tripDays().length > 0;
+let items = store.get(cfg.demo ? 'demoItems' : 'items', []);
+let notes = store.get(cfg.demo ? 'demoNotes' : 'notes', []);
+const saveNotesLocal = () => store.set(cfg.demo ? 'demoNotes' : 'notes', notes);
+// Notes on a day live in the Plan (and My Today); the List shows them only when asked.
+let showDayNotes = store.get('showDayNotes', false);
+let filter = 'all';
+let planFilter = '';           // '' | 'none' (not planned) | yyyy-mm-dd (one day, in route order)
+let query = '';                // search text
+// Visited places are out of the way by default: hidden in the List, faded on the Map.
+let showVisited = store.get('showVisited', false);
+let view = 'list';
+let todayInner = store.get('todayInner', 'list');   // 'list' | 'map', inside the Today tab
+// Today is a personal, on-this-phone shortlist pulled from the shared list. It never syncs.
+const todayIds = new Set(store.get('today', []));
+function isToday(p) { return todayIds.has(p.id); }
+function saveTodayIds() { store.set('today', [...todayIds]); }
+function toggleToday(p) {
+  if (todayIds.has(p.id)) todayIds.delete(p.id); else todayIds.add(p.id);
+  saveTodayIds(); store.set('todayTouched', todayISO());
+}
+// Today's planned places first, in route order; then anything else you starred.
+function todayVisible() {
+  const t = todayISO(), mine = items.filter(isToday);
+  return mine.filter(p => dayOf(p) === t).sort(byOrder)
+    .concat(sortByDistanceThenAdded(mine.filter(p => dayOf(p) !== t)));
+}
+// On each new trip day My Today starts from that day's plan. Stars you added today
+// (before the plan arrived) are kept; yesterday's are replaced.
+function seedMyToday() {
+  const t = todayISO();
+  if (!planOn() || store.get('todayDate', '') === t) return;
+  const plan = dayItems(t);
+  if (!plan.length) return;
+  if (store.get('todayTouched', '') !== t) todayIds.clear();
+  plan.forEach(p => todayIds.add(p.id));
+  saveTodayIds(); store.set('todayDate', t);
+}
+let pos = null;               // {lat, lng}
+let lastSync = store.get('lastSync', null);
+let offline = false;
+let syncProblem = '';          // '', 'offline', 'error', 'auth'
+let warnedAuth = false;
+
+// ---------------------------------------------------------------- API
+let lastWriteAt = 0;
+const WRITES = ['add', 'update', 'delete', 'settings', 'plan', 'noteAdd', 'noteUpdate', 'noteDelete'];
+async function api(action, payload = {}) {
+  if (WRITES.includes(action)) lastWriteAt = Date.now();
+  const j = await apiCall(action, payload);
+  if (WRITES.includes(action)) { lastWriteAt = Date.now(); scheduleRefresh(); }
+  return j;
+}
+async function apiCall(action, payload, creds) {
+  if (!creds && cfg.demo) return demoApi(action, payload);
+  const c = creds || cfg;
+  if (!c.url) throw new Error('Not connected yet: open Settings.');
+  const body = Object.assign({ k: c.key, action }, payload);
+  const j = await send(c.url, body, action);
+  if (!j || typeof j !== 'object') throw new Error('The Sheet sent back something odd.');
+  if (!j.ok) { const e = new Error(j.error || 'Request failed'); e.gone = !!j.gone; e.auth = !!j.auth; throw e; }
+  return j;
+}
+
+// Two ways to talk to Apps Script. The "script tag" way (JSONP) loads the reply
+// like a script, so Safari's cross-site rules can't block it; plain fetch is the
+// backup (and carries very long requests). Whichever works is remembered.
+let transport = store.get('transport', 'jsonp');
+async function send(url, body, action) {
+  // The script-tag way puts the request in the address, which has a length limit
+  // (Japanese text takes up to 9 characters per character once encoded).
+  const long = encodeURIComponent(JSON.stringify(body)).length > 7000;
+  const order = long ? ['fetch'] : transport === 'fetch' ? ['fetch', 'jsonp'] : ['jsonp', 'fetch'];
+  let lastErr;
+  for (const how of order) {
+    try {
+      const j = how === 'jsonp' ? await viaScript(url, body, action === 'list' ? 15000 : 30000) : await viaFetch(url, body);
+      if (!long && how !== transport) { transport = how; store.set('transport', how); }
+      return j;
+    } catch (e) {
+      lastErr = e;
+      // A slow save may still have landed, so don't send it a second time.
+      if (e.timedOut && action !== 'list' && action !== 'resolve') break;
+    }
+  }
+  const e = new Error(navigator.onLine === false ? 'You’re offline.'
+    : long ? 'That’s too long to send in one go. Shorten the note and try again.' : 'Couldn’t reach your Sheet.');
+  e.network = true; e.detail = lastErr && lastErr.message;
+  throw e;
+}
+async function viaFetch(url, body) {
+  const res = await fetch(url, {
+    method: 'POST', redirect: 'follow',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },   // avoids a CORS preflight
+    body: JSON.stringify(body),
+  });
+  return res.json();
+}
+let cbN = 0;
+function viaScript(url, body, timeout) {
+  return new Promise((resolve, reject) => {
+    const name = `__tp${Date.now().toString(36)}${cbN++}`;
+    const el = document.createElement('script');
+    const u = new URL(url);
+    u.searchParams.set('p', JSON.stringify(body));
+    u.searchParams.set('callback', name);
+    let done = false;
+    const finish = (err, data) => {
+      if (done) return; done = true;
+      clearTimeout(timer); el.remove();
+      window[name] = () => {};                 // a late reply lands harmlessly
+      err ? reject(err) : resolve(data);
+    };
+    const timer = setTimeout(() => finish(Object.assign(new Error('No reply from the Sheet'), { timedOut: true })), timeout);
+    window[name] = data => finish(null, data);
+    el.onerror = () => finish(new Error('The Sheet’s reply couldn’t be loaded'));
+    el.src = u.href;
+    document.head.appendChild(el);
+  });
+}
+
+// Shown when a phone can't get any reply from the Sheet. The test page says which setting is off.
+function troubleHTML(url) {
+  const test = esc(String(url).replace(/\?.*$/, '') + '?action=ping');
+  return `<div>⚠️</div><div><b>Couldn’t reach your Sheet</b>
+    <small>This isn’t the key: the phone can’t get any reply yet. <a href="${test}" target="_blank" rel="noopener">Open this test page</a> and match what it shows:</small>
+    <ul class="tips">
+      <li><b>“Your Sheet is reachable”</b>: the Sheet is fine. Come back and tap Connect again.</li>
+      <li><b>A Google sign-in page, or “You need access”</b>: in Apps Script, Deploy → Manage deployments → pencil. Set <i>Who has access</i> to <b>Anyone</b> (not “Anyone with Google account”), then Deploy.</li>
+      <li><b>“Authorization is required”</b>: in Apps Script, run <i>setup</i> again and approve, then deploy a New version.</li>
+      <li><b>“Script function not found: doGet”</b>: the new Code.gs isn’t live yet. Deploy → Manage deployments → pencil → Version: New version → Deploy.</li>
+      <li><b>“Sorry, unable to open the file”</b>: you’re signed into several Google accounts. Open the test page in a private window.</li>
+      <li><b>A page saying the script isn’t attached to a Sheet</b>: make the script from the Sheet itself (Extensions → Apps Script).</li>
+    </ul></div>`;
+}
+
+function demoApi(action, p) {
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  return wait(action === 'resolve' || action === 'add' ? 700 : 150).then(() => {
+    if (action === 'list') return { ok: true, items: store.get('demoItems', DEMO_ITEMS), notes: store.get('demoNotes', DEMO_NOTES) };
+    if (action.startsWith('note')) {
+      const ns = store.get('demoNotes', DEMO_NOTES).slice();
+      const save = () => store.set('demoNotes', ns);
+      if (action === 'noteAdd') {
+        const note = { id: 'n' + Date.now(), added: new Date().toISOString(), title: p.title, text: p.text || '', day: p.day || '', links: p.links || '' };
+        ns.push(note); save(); return { ok: true, note };
+      }
+      const i = ns.findIndex(n => n.id === p.id);
+      if (action === 'noteDelete') { if (i >= 0) ns.splice(i, 1); save(); return { ok: true }; }
+      if (i < 0) return Promise.reject(Object.assign(new Error('That note was deleted on another phone.'), { gone: true }));
+      Object.assign(ns[i], p.fields); save(); return { ok: true, note: ns[i] };
+    }
+    if (action === 'resolve') {
+      const q = String(p.q || '').trim();
+      const name = q.replace(/https?:\/\/\S+/g, '').split('\n')[0].trim() || 'Demo place';
+      const known = DEMO_ITEMS.find(d => d.name.toLowerCase().includes(name.toLowerCase().slice(0, 6)));
+      return { ok: true, place: known ? Object.assign({}, known, { why: '' })
+        : { name, address: (tripArea() || 'Osaka') + ' (demo guess)', about: '', lat: 34.67 + Math.random() * .03, lng: 135.49 + Math.random() * .03, category: 'other', link: (q.match(/https?:\/\/\S+/) || [''])[0] } };
+    }
+    const list = store.get('demoItems', DEMO_ITEMS).slice();
+    if (action === 'add') {
+      const item = Object.assign({ id: 'd' + Date.now(), added: new Date().toISOString(), been: false }, p);
+      delete item.q; delete item.near;
+      list.push(item); store.set('demoItems', list); return { ok: true, item };
+    }
+    if (action === 'settings') return { ok: true, settings: { trip: p.trip, near: p.near, start: p.start, end: p.end, set: true, plan: true } };
+    if (action === 'plan') {
+      const out = [];
+      for (const c of p.changes) {
+        const it = list.find(x => x.id === c.id);
+        if (it) { it.day = c.day || ''; it.dayOrder = c.day ? c.dayOrder : null; out.push(it); }
+      }
+      store.set('demoItems', list); return { ok: true, items: out, gone: [] };
+    }
+    if (action === 'update') {
+      const i = list.findIndex(x => x.id === p.id);
+      if (i < 0) return Promise.reject(Object.assign(new Error('That place was deleted on another phone.'), { gone: true }));
+      Object.assign(list[i], p.fields);
+      store.set('demoItems', list); return { ok: true, item: list[i] };
+    }
+    if (action === 'delete') { store.set('demoItems', list.filter(x => x.id !== p.id)); return { ok: true }; }
+  });
+}
+
+let refreshSeq = 0, refreshTimer = null;
+function scheduleRefresh(ms = 1500) {
+  clearTimeout(refreshTimer);
+  refreshTimer = setTimeout(() => refresh(true), ms);
+}
+async function refresh(quiet) {
+  if (!cfg.url && !cfg.demo) { render(); return; }
+  const seq = ++refreshSeq, started = Date.now();
+  const b = $('#syncBtn'); b.classList.add('spin');
+  try {
+    const j = await api('list');
+    // A newer refresh is on its way, or this phone saved something after this one
+    // started: this answer is out of date, so drop it (the next refresh has it).
+    if (seq !== refreshSeq) return;
+    if (started < lastWriteAt) { scheduleRefresh(300); return; }
+    items = j.items || [];
+    store.set(cfg.demo ? 'demoItems' : 'items', items);
+    if (j.notes) { notes = j.notes; saveNotesLocal(); }   // an older Code.gs sends none
+    if (j.settings && !cfg.demo) adoptSettings(j.settings);
+    lastSync = Date.now(); store.set('lastSync', lastSync); offline = false; syncProblem = '';
+  } catch (e) {
+    if (seq !== refreshSeq) return;
+    offline = true;
+    syncProblem = !navigator.onLine ? 'offline' : e.auth ? 'auth' : 'error';
+    if (e.auth && !warnedAuth) {
+      warnedAuth = true;
+      toast('This Sheet\u2019s key has changed. Open a new connection link.', { label: 'Settings', fn: openSettings });
+    } else if (!quiet) toast(navigator.onLine ? e.message : 'Offline: showing your saved copy');
+  } finally {
+    b.classList.remove('spin'); render();
+  }
+}
+
+function upsert(item) {
+  const i = items.findIndex(x => x.id === item.id);
+  if (i >= 0) items[i] = item; else items.push(item);
+  store.set(cfg.demo ? 'demoItems' : 'items', items);
+}
+function dropLocal(id) {
+  items = items.filter(x => x.id !== id);
+  store.set(cfg.demo ? 'demoItems' : 'items', items);
+  if (todayIds.delete(id)) saveTodayIds();
+  if ($('#peek').dataset.id === id) hidePeek(mainScope);
+  if ($('#todayPeek').dataset.id === id) hidePeek(todayScope);
+}
+function goneElsewhere(id) {
+  dropLocal(id); render(); toast('That place was deleted on another phone');
+}
+// Trip name and area are shared through the Sheet, so all phones match.
+// The Sheet is the source of truth. The only time a phone pushes its own values
+// is a Sheet that has never had trip details (made with an older version of the app).
+function adoptSettings(st) {
+  // Dates and whether the Sheet can hold a plan come from the Sheet every time.
+  const next = { start: st.start || '', end: st.end || '', planReady: !!st.plan, notesReady: !!st.notes };
+  if (Object.keys(next).some(k => cfg[k] !== next[k])) { Object.assign(cfg, next); store.set('cfg', cfg); }
+  if (st.set) {
+    if (st.trip !== cfg.trip || st.near !== cfg.near) { cfg.trip = st.trip; cfg.near = st.near; store.set('cfg', cfg); }
+  } else if (cfg.trip || cfg.near) {
+    api('settings', { trip: cfg.trip, near: cfg.near }).catch(() => {});
+  }
+}
+
+// ---------------------------------------------------------------- distance & links
+function metres(a, b) {
+  const R = 6371e3, r = x => x * Math.PI / 180;
+  const dLat = r(b.lat - a.lat), dLng = r(b.lng - a.lng);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(r(a.lat)) * Math.cos(r(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+function distLabel(p) {
+  if (!pos || !hasPin(p)) return '';
+  const m = metres(pos, p);
+  if (m < 1000) return `${Math.round(m / 10) * 10} m · ${Math.max(1, Math.round(m / 80))} min walk`;
+  return m < 20000 ? `${(m / 1000).toFixed(1)} km` : `${Math.round(m / 1000)} km`;
+}
+// Directions from wherever you are. mode 'transit' asks Google Maps for trains,
+// subway and buses, with times, platforms and fares.
+function directionsUrl(p, mode) {
+  const u = new URL('https://www.google.com/maps/dir/');
+  u.searchParams.set('api', '1');
+  if (mode) u.searchParams.set('travelmode', mode);
+  if (p.placeId) {
+    u.searchParams.set('destination', [p.name, p.address].filter(Boolean).join(', '));
+    u.searchParams.set('destination_place_id', p.placeId);
+  } else if (hasPin(p)) {
+    u.searchParams.set('destination', `${p.lat},${p.lng}`);
+  } else {
+    u.searchParams.set('destination', [p.name, p.address || tripArea()].filter(Boolean).join(', '));
+  }
+  return u.href;
+}
+function infoUrl(p) {
+  if (p.link && /google\.[^/]+\/maps|maps\.google|maps\.app\.goo\.gl|goo\.gl\/maps/.test(p.link)) return p.link;
+  const u = new URL('https://www.google.com/maps/search/');
+  u.searchParams.set('api', '1');
+  u.searchParams.set('query', [p.name, p.address || tripArea()].filter(Boolean).join(', '));
+  if (p.placeId) u.searchParams.set('query_place_id', p.placeId);
+  return u.href;
+}
+
+// ---------------------------------------------------------------- rendering
+function sortByDistanceThenAdded(list) {
+  return list.slice().sort((a, b) => {
+    if (!!a.been !== !!b.been) return a.been ? 1 : -1;
+    if (pos) {
+      const da = hasPin(a) ? metres(pos, a) : 1e12, db = hasPin(b) ? metres(pos, b) : 1e12;
+      return da - db;
+    }
+    return String(b.added || b.id).localeCompare(String(a.added || a.id));
+  });
+}
+// Search ignores case and accents, so "yunagi" finds "Yūnagi".
+const fold = s => String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+function matchesQuery(p) {
+  if (!query) return true;
+  const q = fold(query);
+  return fold(p.name).includes(q) || fold(p.why).includes(q);
+}
+// The Map keeps visited places (faded); the List leaves them out unless Show visited is on.
+// A single day always shows everything on it, so a past day reads as a record.
+function visible(forMap) {
+  const oneDay = planOn() && planFilter && planFilter !== 'none';
+  const list = items.filter(p => (filter === 'all' || catOf(p) === filter) && (forMap || showVisited || oneDay || !p.been) && matchesQuery(p));
+  if (planOn() && planFilter === 'none') return sortByDistanceThenAdded(list.filter(p => !dayOf(p)));
+  if (planOn() && planFilter) return list.filter(p => dayOf(p) === planFilter).sort(byOrder);
+  return sortByDistanceThenAdded(list);
+}
+// Showing one planned day: the map numbers its pins and draws the route.
+const dayRoute = () => planOn() && planFilter && planFilter !== 'none' ? planFilter : '';
+const faded = p => p.been && !showVisited && !dayRoute();
+
+// Notes in the List: ones not on a day always; ones on a day only with "Show notes on days"
+// (they live in the Plan). Picking a day shows that day's notes; a category hides notes.
+const matchesNoteQuery = n => !query || fold(n.title).includes(fold(query)) || fold(n.text).includes(fold(query));
+function visibleNotes() {
+  if (!notesReady() || filter !== 'all') return [];
+  const list = notes.filter(matchesNoteQuery);
+  const oneDay = planOn() && planFilter && planFilter !== 'none';
+  if (oneDay) return list.filter(n => dayOf(n) === planFilter).sort(byAdded);
+  if (planOn() && planFilter === 'none') return list.filter(n => !dayOf(n)).sort(byAdded);
+  return list.filter(n => showDayNotes || !dayOf(n)).sort(byAdded);
+}
+
+function cardHTML(p) {
+  const c = catOf(p);
+  const dist = distLabel(p);
+  const inToday = isToday(p);
+  const pd = planOn() ? dayOf(p) : null;
+  let dayChip = '';
+  if (pd === '') dayChip = '<button type="button" class="daychip" data-act="plan" aria-label="Add to a day in the plan">📅 Plan</button>';
+  else if (pd) {
+    const label = esc(dayLabel(pd));
+    dayChip = missed(p) ? `<button type="button" class="daychip missed" data-act="plan" aria-label="Missed on ${label}. Move to another day">Missed · ${label}</button>`
+      : p.been && isPastDay(pd) ? `<button type="button" class="daychip done" data-act="plan" aria-label="Visited on ${label}">✓ ${label}</button>`
+      : `<button type="button" class="daychip set" data-act="plan" aria-label="Planned for ${label}. Change day">📅 ${label}</button>`;
+  }
+  return `<article class="card cat-${c}${p.been ? ' been' : ''}" data-id="${esc(p.id)}">
+    <div class="cat-row"><p class="cat-tag">${CATS[c].emoji} ${CATS[c].label}</p>${dayChip}</div>
+    <div class="card-head">
+      <button type="button" class="star" data-act="today" aria-pressed="${inToday}" aria-label="${inToday ? 'Remove from My Today' : 'Add to My Today'}">${ICON.star}</button>
+      <h3>${esc(p.name || 'Untitled')}</h3>${dist ? `<span class="dist">${esc(dist)}</span>` : ''}
+    </div>
+    ${p.about ? `<p class="about">${esc(p.about)}</p>` : ''}
+    ${p.why ? `<p class="why">${esc(p.why)}</p>` : ''}
+    ${(pn => pn.length ? `<div class="linkrow">${pn.map(n => `<button type="button" class="notechip" data-open-note="${esc(n.id)}">📝 ${esc(n.title || 'Note')}</button>`).join('')}</div>` : '')(notesFor(p))}
+    ${hasPin(p) ? (p.address ? `<p class="addr">${esc(p.address)}</p>` : '')
+                : `<p class="addr nopin">No pin yet: tap edit, then Find</p>`}
+    <div class="actions">
+      <a class="btn go" href="${esc(directionsUrl(p))}" target="_blank" rel="noopener">${ICON.go}Go</a>
+      <a class="btn sq" href="${esc(directionsUrl(p, 'transit'))}" target="_blank" rel="noopener" aria-label="Public transport directions in Google Maps">${ICON.transit}</a>
+      <a class="btn sq" href="${esc(infoUrl(p))}" target="_blank" rel="noopener" aria-label="Open in Google Maps">${ICON.info}</a>
+      ${hasPin(p) ? `<button class="btn sq" data-act="map" aria-label="Show on map">${ICON.map}</button>` : ''}
+      <button class="btn sq${p.been ? ' on' : ''}" data-act="been" aria-label="${p.been ? 'Mark not visited' : 'Mark as been'}" aria-pressed="${!!p.been}">${ICON.check}</button>
+      <button class="btn sq" data-act="edit" aria-label="Edit">${ICON.edit}</button>
+    </div>
+  </article>`;
+}
+
+// One chip for the whole plan: it opens the phone's own picker, so a long trip
+// doesn't turn into a row of day chips.
+function daySelectHTML() {
+  const t = todayISO(), days = tripDays();
+  const up = days.filter(d => d >= t), past = days.filter(d => d < t);
+  const opt = (v, text) => `<option value="${v}"${planFilter === v ? ' selected' : ''}>${esc(text)}</option>`;
+  const dayOpt = d => opt(d, `${dayLabel(d)}${d === t ? ' · today' : ''} (${dayItems(d).length})`);
+  const group = (label, list) => list.length ? `<optgroup label="${label}">${list.map(dayOpt).join('')}</optgroup>` : '';
+  const options = opt('', 'All days') + opt('none', `Not planned (${items.filter(p => !dayOf(p)).length})`)
+    + (past.length ? group('Coming up', up) + group('Past days', past) : up.map(dayOpt).join(''));
+  const label = !planFilter ? 'All days' : planFilter === 'none' ? 'Not planned' : dayLabel(planFilter);
+  return `<label class="chip plan select${planFilter ? ' on' : ''}">📅 ${esc(label)} ▾<select id="dayPick" aria-label="Show one day of the plan">${options}</select></label>`;
+}
+
+function renderChips() {
+  const shown = p => showVisited || !p.been;
+  const counts = { all: items.filter(shown).length };
+  items.forEach(p => { if (shown(p)) counts[catOf(p)] = (counts[catOf(p)] || 0) + 1; });
+  const beenCount = items.filter(p => p.been).length;
+  let h = `<button class="chip" data-f="all" aria-pressed="${filter === 'all'}">All<span class="n">${counts.all}</span></button>`;
+  for (const [k, v] of Object.entries(CATS)) {
+    if (!counts[k] && filter !== k) continue;
+    h += `<button class="chip" data-f="${k}" aria-pressed="${filter === k}">${v.emoji} ${v.label}<span class="n">${counts[k] || 0}</span></button>`;
+  }
+  if (!pos && items.some(hasPin)) h += `<button class="chip near" data-near>🧭 Nearest first</button>`;
+  if (planOn()) h += daySelectHTML();
+  if (beenCount) h += `<button class="chip" data-visited aria-pressed="${showVisited}">✓ ${showVisited ? 'Hide' : 'Show'} visited<span class="n">${beenCount}</span></button>`;
+  const onDays = notesReady() ? notes.filter(n => dayOf(n)).length : 0;
+  if (onDays) h += `<button class="chip" data-notes aria-pressed="${showDayNotes}">📝 ${showDayNotes ? 'Hide' : 'Show'} notes on days<span class="n">${onDays}</span></button>`;
+  $('#chips').innerHTML = h;
+}
+
+function renderSub() {
+  const n = items.length, been = items.filter(p => p.been).length;
+  let s = `${n} place${n === 1 ? '' : 's'}${been ? ` · ${been} visited` : ''}`;
+  let cls = '';
+  if (cfg.demo) s += ' · demo';
+  else if (syncProblem === 'auth') { s += ' · key changed, reconnect'; cls = 'off'; }
+  else if (syncProblem === 'error') { s += ' · can\u2019t reach the Sheet'; cls = 'off'; }
+  else if (offline) { s += ' · offline copy'; cls = 'off'; }
+  else if (lastSync) s += ' · synced';
+  $('#sub').className = 'sub ' + cls;
+  $('#sub').innerHTML = (cfg.url || cfg.demo ? '<span class="dot"></span>' : '') + esc(s);
+}
+
+function render() {
+  $('#tripTitle').textContent = tripName() || 'Trip Pins';
+  document.title = (tripName() ? `${tripName()} · Trip Pins` : 'Trip Pins') + (BETA ? ' (test)' : '');
+  $('#betaTag').hidden = !BETA;
+  const setUp = !!(cfg.url || cfg.demo);
+  $('#fab').hidden = !setUp || view === 'today'; $('#chips').hidden = !setUp; $('#sub').hidden = !setUp;
+  $('#noteFab').hidden = $('#fab').hidden || !notesReady();
+  $('#searchBox').hidden = !setUp || !items.length;
+  seedMyToday();
+  renderSub(); renderChips();
+  const list = visible();
+  const el = $('#list');
+  if (!cfg.url && !cfg.demo) {
+    el.innerHTML = `<div class="welcome">
+      <h2>Save it now. Find it later.</h2>
+      <p>Share a place from Google Maps (or paste a link, or type a name). Add why you want to go. Tap <b>Go</b> when you're ready.</p>
+      <p>Your places live in a Google Sheet you own, so they sync between phones.</p>
+      <button class="btn primary" data-open-settings>Connect</button>
+      <p class="hint" style="margin-top:10px">Someone sent you a link? Just open it. On an iPhone home-screen app, tap Connect and paste the link.</p>
+      <button class="btn" data-demo>Look around with sample places</button>
+    </div>`;
+  } else if (!items.length && !(notesReady() && notes.length)) {
+    el.innerHTML = `<div class="empty"><h2>Nothing saved yet</h2>
+      <p>Found somewhere good? In Google Maps tap <b>Share</b>, then pick Trip Pins (Android) or your Save Place shortcut (iPhone).</p>
+      <p>Or tap <b>Add</b> and paste a link.</p></div>`;
+  } else {
+    const noteList = visibleNotes();
+    // Say how many visited places and day notes are tucked away, so they're never lost.
+    const hidden = showVisited ? 0 : visible(true).filter(p => p.been && !list.includes(p)).length;
+    const dayNotesHidden = notesReady() && filter === 'all' && !planFilter && !showDayNotes ? notes.filter(n => dayOf(n) && matchesNoteQuery(n)).length : 0;
+    const tucked = (hidden ? `<p class="hidden-note">${hidden} visited place${hidden === 1 ? '' : 's'} hidden. <button type="button" class="linkish" data-visited>Show</button></p>` : '')
+      + (dayNotesHidden ? `<p class="hidden-note">${dayNotesHidden} note${dayNotesHidden === 1 ? '' : 's'} on days, in the Plan. <button type="button" class="linkish" data-notes>Show here</button></p>` : '');
+    el.innerHTML = noteList.map(noteCardHTML).join('') + (list.length ? list.map(cardHTML).join('')
+      : noteList.length ? ''
+      : query ? `<div class="empty"><p>Nothing matches “${esc(query)}”.</p></div>`
+      : `<div class="empty"><p>Nothing here with this filter.</p></div>`) + tucked;
+  }
+  if (mainScope.map) drawMarkers(mainScope);
+  const peekId = $('#peek').dataset.id;
+  if (peekId) { const p = items.find(x => x.id === peekId); p ? showPeek(mainScope, p) : hidePeek(mainScope); }
+  $('#tabToday').setAttribute('aria-selected', view === 'today');
+  renderToday();
+  renderPlan();
+}
+
+function renderToday() {
+  // Count what's actually here: places deleted on another phone leave their ids behind.
+  const list = todayVisible();
+  const n = list.length;
+  const badge = $('#todayN');
+  badge.textContent = n; badge.hidden = !n;
+  $('#clearTodayBtn').hidden = !n;
+  const todays = planOn() ? dayItems(todayISO()) : [];
+  $('#loadPlanBtn').hidden = !todays.some(p => !isToday(p));
+  const el = $('#todayList');
+  // Today's notes from the plan sit on top: reminders for the day.
+  const todayNotes = notesReady() && planOn() ? dayNotes(todayISO()) : [];
+  $('#todayEmpty').textContent = n || todayNotes.length ? '' : todays.length ? 'Cleared. Add today’s plan back, or tap the star on any place.'
+    : 'Nothing here yet. Tap the star on any place to add it for today.';
+  el.innerHTML = todayNotes.map(noteCardHTML).join('') + list.map(cardHTML).join('');
+  if (todayScope.map) drawMarkers(todayScope);
+  const peekId = $('#todayPeek').dataset.id;
+  if (peekId) { const p = items.find(x => x.id === peekId); p ? showPeek(todayScope, p) : hidePeek(todayScope); }
+}
+
+// ---------------------------------------------------------------- location
+let watchId = null;
+function startLocating(prompted) {
+  if (!navigator.geolocation || watchId != null) return;
+  watchId = navigator.geolocation.watchPosition(g => {
+    const first = !pos;
+    pos = { lat: g.coords.latitude, lng: g.coords.longitude };
+    store.set('locOk', true);
+    if (first) { render(); if (prompted) toast('Sorted by distance'); }
+    else throttledRender();
+    drawMe(mainScope); drawMe(todayScope);
+  }, err => {
+    watchId = null;
+    if (prompted) toast(err.code === 1 ? 'Location is blocked for this site in your browser settings' : 'Couldn’t get your location');
+  }, { enableHighAccuracy: true, maximumAge: 20000, timeout: 20000 });
+}
+let rT = 0;
+function throttledRender() {
+  const now = Date.now();
+  if (now - rT > 15000 && !document.querySelector('dialog[open]')) { rT = now; render(); }
+}
+
+// ---------------------------------------------------------------- map
+// Two independent map scopes share the same drawing logic: the main map
+// (all places) and the Today map (just the day's shortlist).
+function makeScope(mapId, peekId, itemsFn) {
+  return { mapId, peekId, itemsFn, map: null, layer: null, me: null, markers: {} };
+}
+const mainScope = makeScope('map', 'peek', () => visible(true));
+const todayScope = makeScope('todayMap', 'todayPeek', todayVisible);
+
+function ensureMap(scope) {
+  if (scope.map || !window.L) return !!scope.map;
+  scope.map = L.map(scope.mapId, { zoomControl: false, attributionControl: true }).setView([34.6873, 135.5262], 13);
+  // OpenStreetMap's own tiles: free, no key or account needed.
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  }).addTo(scope.map);
+  scope.layer = L.layerGroup().addTo(scope.map);
+  scope.map.on('click', () => hidePeek(scope));
+  drawMarkers(scope); drawMe(scope); fitAll(scope, false);
+  return true;
+}
+function drawMarkers(scope) {
+  if (!scope.layer) return;
+  scope.layer.clearLayers(); scope.markers = {};
+  const sel = $('#' + scope.peekId).dataset.id;
+  const all = scope.itemsFn();
+  // One planned day on the main map: number the pins in route order and join them up.
+  const route = scope === mainScope && dayRoute();
+  const shown = all.filter(hasPin);
+  if (route && shown.length > 1) {
+    const colour = getComputedStyle(document.documentElement).getPropertyValue('--today-accent').trim() || '#4A47C7';
+    L.polyline(shown.map(p => [p.lat, p.lng]), { color: colour, weight: 4, opacity: .75, dashArray: '2 8', lineCap: 'round', interactive: false }).addTo(scope.layer);
+  }
+  shown.forEach(p => {
+    const c = catOf(p);
+    const label = route ? all.indexOf(p) + 1 : CATS[c].emoji;
+    const icon = L.divIcon({
+      className: '', iconSize: [34, 34], iconAnchor: [17, 41],
+      html: `<div class="pin cat-${c}${route ? ' num' : ''}${p.been ? ' been' : ''}${sel === p.id ? ' sel' : sel || faded(p) ? ' ghost' : ''}"><span>${label}</span></div>`,
+    });
+    // With one place in focus, the rest fade back; tapping a faded pin focuses that one instead.
+    const m = L.marker([p.lat, p.lng], { icon, title: p.name, riseOnHover: true, zIndexOffset: sel === p.id ? 1000 : 0 })
+      .on('click', e => { L.DomEvent.stopPropagation(e); showPeek(scope, p); drawMarkers(scope); })
+      .addTo(scope.layer);
+    scope.markers[p.id] = m;
+  });
+}
+function drawMe(scope) {
+  if (!scope.map || !pos) return;
+  if (!scope.me) scope.me = L.marker([pos.lat, pos.lng], { icon: L.divIcon({ className: '', html: '<div class="me"></div>', iconSize: [18, 18], iconAnchor: [9, 9] }), interactive: false, zIndexOffset: -100 }).addTo(scope.map);
+  else scope.me.setLatLng([pos.lat, pos.lng]);
+}
+function fitAll(scope, animate = true) {
+  if (!scope.map) return;
+  // Frame the places still to visit; faded ones only if nothing else is left.
+  let list = scope.itemsFn().filter(hasPin);
+  if (list.some(p => !faded(p))) list = list.filter(p => !faded(p));
+  const pts = list.map(p => [p.lat, p.lng]);
+  if (pos) {
+    // Keep the view local: only places within 30 km of you, plus you.
+    const near = list.filter(p => metres(pos, p) < 30000).map(p => [p.lat, p.lng]);
+    if (near.length) { scope.map.fitBounds(L.latLngBounds(near.concat([[pos.lat, pos.lng]])), { padding: [50, 50], maxZoom: 16, animate }); return; }
+  }
+  if (pts.length) scope.map.fitBounds(L.latLngBounds(pts), { padding: [50, 50], maxZoom: 16, animate });
+  else if (pos) scope.map.setView([pos.lat, pos.lng], 15, { animate });
+}
+function showPeek(scope, p) {
+  const pk = $('#' + scope.peekId); pk.dataset.id = p.id; pk.innerHTML = cardHTML(p); pk.classList.add('open');
+  document.body.classList.add('peeking');
+}
+function hidePeek(scope) {
+  const pk = $('#' + scope.peekId); if (!pk.dataset.id) return;
+  delete pk.dataset.id; pk.classList.remove('open'); pk.innerHTML = '';
+  document.body.classList.remove('peeking'); drawMarkers(scope);
+}
+function setTopH() {
+  document.documentElement.style.setProperty('--topH', $('#top').offsetHeight + 'px');
+  const bar = $('#todayControls');
+  document.documentElement.style.setProperty('--todayBarH', (view === 'today' && bar) ? bar.offsetHeight + 'px' : '0px');
+}
+
+function setView(v) {
+  view = v;
+  document.body.classList.toggle('show-map', v === 'map');
+  document.body.classList.toggle('show-today', v === 'today');
+  document.body.classList.toggle('show-plan', v === 'plan');
+  $('#tabPlan').setAttribute('aria-selected', v === 'plan');
+  if (v === 'plan') renderPlan();
+  $('#tabList').setAttribute('aria-selected', v === 'list');
+  $('#tabMap').setAttribute('aria-selected', v === 'map');
+  $('#tabToday').setAttribute('aria-selected', v === 'today');
+  // New places are only ever added to the shared list; Today is just a
+  // favourite flag on top of it, so there's no "add" entry point here.
+  $('#fab').hidden = v === 'today' || !(cfg.url || cfg.demo);
+  $('#noteFab').hidden = $('#fab').hidden || !notesReady();
+  if (v === 'map') {
+    setTopH();
+    if (!ensureMap(mainScope)) {
+      // Leaflet still loading: try again shortly.
+      const t = setInterval(() => { if (window.L) { clearInterval(t); ensureMap(mainScope); } }, 200);
+    } else setTimeout(() => mainScope.map.invalidateSize(), 0);
+  } else hidePeek(mainScope);
+  if (v === 'today') { setTopH(); renderToday(); setTodayInner(todayInner); } else hidePeek(todayScope);
+}
+
+function setTodayInner(v) {
+  todayInner = v; store.set('todayInner', v);
+  document.body.classList.toggle('today-map', v === 'map');
+  $('#todayTabList').setAttribute('aria-selected', v === 'list');
+  $('#todayTabMap').setAttribute('aria-selected', v === 'map');
+  if (v === 'map' && view === 'today') {
+    setTopH();
+    if (!ensureMap(todayScope)) {
+      const t = setInterval(() => { if (window.L) { clearInterval(t); ensureMap(todayScope); } }, 200);
+    } else setTimeout(() => todayScope.map.invalidateSize(), 0);
+  } else hidePeek(todayScope);
+}
+
+// ---------------------------------------------------------------- add / edit sheet
+const sheet = $('#placeSheet');
+let editing = null;        // item being edited, or null when adding
+let draft = {};            // resolved place data (lat, lng, placeId, link…)
+let chosenCat = null;      // category the person picked by hand
+let resolveSeq = 0, resolving = null, typeTimer = null;
+
+function catButtons(sel) {
+  $('#catPick').innerHTML = Object.entries(CATS).map(([k, v]) =>
+    `<button type="button" class="cat-${k}" data-cat="${k}" aria-pressed="${sel === k}">${v.emoji} ${v.label}</button>`).join('');
+}
+function setStatus(el, kind, html) {
+  el.className = 'status' + (kind ? ' show ' + kind : '');
+  el.innerHTML = html || '';
+}
+
+function openAdd(prefill) {
+  editing = null; draft = {}; chosenCat = null;
+  $('#placeTitle').textContent = 'Add a place';
+  $('#findBox').hidden = false; $('#relocBtn').hidden = true;
+  $('#beenRow').hidden = true; $('#delBtn').hidden = true;
+  $('#q').value = prefill || ''; $('#fWhy').value = ''; $('#fName').value = '';
+  $('#fAbout').value = ''; $('#fAddr').value = '';
+  catButtons(null); setStatus($('#status'), '', '');
+  $('#saveBtn').disabled = false; $('#saveBtn').textContent = 'Save';
+  sheet.showModal();
+  if (prefill) { lookUp(prefill); setTimeout(() => $('#fWhy').focus(), 50); }
+  else setTimeout(() => $('#q').focus(), 50);
+}
+
+let original = null;
+function openEdit(p) {
+  original = Object.assign({}, p);
+  editing = p; draft = { lat: p.lat, lng: p.lng, placeId: p.placeId, link: p.link }; chosenCat = catOf(p);
+  $('#placeTitle').textContent = 'Edit place';
+  $('#findBox').hidden = true; $('#relocBtn').hidden = false;
+  $('#beenRow').hidden = false; $('#delBtn').hidden = false; resetDel();
+  $('#fWhy').value = p.why || ''; $('#fName').value = p.name || '';
+  $('#fAbout').value = p.about || ''; $('#fAddr').value = p.address || '';
+  $('#fBeen').checked = !!p.been;
+  catButtons(chosenCat);
+  setStatus($('#status'), hasPin(p) ? '' : 'bad', hasPin(p) ? '' : '<div>No map pin yet. Check the name and address, then tap <b>Find</b>.</div>');
+  $('#saveBtn').disabled = false; $('#saveBtn').textContent = 'Save';
+  sheet.showModal();
+}
+
+function lookUp(q, forEdit) {
+  q = String(q || '').trim();
+  if (!q) { setStatus($('#status'), '', ''); return null; }
+  const seq = ++resolveSeq;
+  setStatus($('#status'), 'show', '<div class="spinner"></div><div>Looking it up…</div>');
+  resolving = api('resolve', { q, near: tripArea() }).then(j => {
+    if (seq !== resolveSeq) return;
+    const p = j.place || {};
+    draft = { lat: p.lat, lng: p.lng, placeId: p.placeId || '', link: p.link || (forEdit ? draft.link : '') };
+    if (!forEdit || !$('#fName').value) $('#fName').value = p.name || $('#fName').value;
+    if (p.about && !$('#fAbout').value) $('#fAbout').value = p.about;
+    if (p.address) $('#fAddr').value = p.address;
+    if (!chosenCat && p.category) catButtons(p.category);
+    if (hasPin(p)) {
+      setStatus($('#status'), 'ok', `<div>📍</div><div><b>${esc(p.name || 'Found it')}</b><small>${esc(p.address || `${(+p.lat).toFixed(4)}, ${(+p.lng).toFixed(4)}`)}</small></div>`);
+    } else {
+      setStatus($('#status'), 'bad', `<div>🤔</div><div><b>Couldn’t pin this one</b><small>You can still save it. Add an address or area below and tap Find later.</small></div>`);
+    }
+  }).catch(e => {
+    if (seq !== resolveSeq) return;
+    setStatus($('#status'), 'bad', `<div>⚠️</div><div><b>Lookup failed</b><small>${esc(e.message)}. You can still type the details and save.</small></div>`);
+  }).finally(() => { if (seq === resolveSeq) resolving = null; });
+  return resolving;
+}
+
+function pickedCat() {
+  const b = $('#catPick [aria-pressed="true"]');
+  return b ? b.dataset.cat : 'other';
+}
+
+async function savePlace(ev) {
+  ev.preventDefault();
+  const btn = $('#saveBtn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    if (resolving) await resolving;
+    const fields = {
+      name: $('#fName').value.trim(), about: $('#fAbout').value.trim(), why: $('#fWhy').value.trim(),
+      address: $('#fAddr').value.trim(), category: pickedCat(),
+      lat: draft.lat == null ? '' : draft.lat, lng: draft.lng == null ? '' : draft.lng,
+      placeId: draft.placeId || '', link: draft.link || '',
+    };
+    if (editing) {
+      fields.been = $('#fBeen').checked;
+      // Only send what you changed, so you don't overwrite edits made on another phone.
+      const changed = {};
+      for (const k of Object.keys(fields)) {
+        const was = original[k] == null ? '' : original[k];
+        if (String(fields[k]) !== String(was)) changed[k] = fields[k];
+      }
+      if (Object.keys(changed).length) {
+        try {
+          const j = await api('update', { id: editing.id, fields: changed });
+          upsert(j.item);
+        } catch (e) {
+          if (e.gone) { sheet.close(); goneElsewhere(editing.id); return; }
+          throw e;
+        }
+      }
+      toast('Saved');
+    } else {
+      const q = $('#q').value.trim();
+      if (!fields.name && !q) { toast('Paste a link or type a name first'); btn.disabled = false; btn.textContent = 'Save'; return; }
+      if (!fields.name) fields.name = q.replace(/https?:\/\/\S+/g, '').trim();
+      if (!fields.link) { const m = q.match(/https?:\/\/\S+/); if (m) fields.link = m[0]; }
+      const payload = fields.name || fields.lat !== '' ? fields : { q, why: fields.why, category: fields.category };
+      payload.near = tripArea();
+      const j = await api('add', payload);
+      upsert(j.item);
+      const added = j.item;
+      if (j.duplicate) toast(fields.why ? `Already saved: ${added.name}. Your note was added.` : `Already saved: ${added.name}`);
+      else toast(`Saved ${added.name}`, { label: 'Undo', fn: () => removePlace(added) });
+    }
+    sheet.close(); render();
+  } catch (e) {
+    toast(e.message);
+    btn.disabled = false; btn.textContent = 'Save';
+  }
+}
+
+async function toggleBeen(p) {
+  const want = !p.been;
+  p.been = want; render();
+  try {
+    const j = await api('update', { id: p.id, fields: { been: want } });
+    upsert(j.item); render();
+  } catch (e) {
+    if (e.gone) return goneElsewhere(p.id);
+    const cur = items.find(x => x.id === p.id); if (cur) cur.been = !want;
+    render(); toast(e.message);
+  }
+}
+
+async function removePlace(p) {
+  try {
+    await api('delete', { id: p.id });
+    dropLocal(p.id);
+    render(); toast(`Deleted ${p.name || 'place'}`);
+  } catch (e) { toast(e.message); }
+}
+let delTimer;
+function deletePlace() {
+  const b = $('#delBtn');
+  if (!editing) return;
+  // First tap arms the button; second tap deletes. No pop-up needed.
+  if (!b.classList.contains('armed')) {
+    b.classList.add('armed'); b.textContent = 'Tap again to delete';
+    clearTimeout(delTimer); delTimer = setTimeout(resetDel, 4000);
+    return;
+  }
+  resetDel();
+  const p = editing;
+  sheet.close();
+  removePlace(p);
+}
+function resetDel() { const b = $('#delBtn'); b.classList.remove('armed'); b.textContent = 'Delete'; }
+
+// ---------------------------------------------------------------- today
+let clearTodayTimer;
+function resetClearToday() { const b = $('#clearTodayBtn'); b.classList.remove('armed'); b.textContent = 'Clear day'; }
+function clearTodayTap() {
+  const b = $('#clearTodayBtn');
+  if (!b.classList.contains('armed')) {
+    b.classList.add('armed'); b.textContent = 'Tap again to clear';
+    clearTimeout(clearTodayTimer); clearTodayTimer = setTimeout(resetClearToday, 4000);
+    return;
+  }
+  resetClearToday();
+  todayIds.clear(); saveTodayIds();
+  store.set('todayDate', todayISO());   // cleared on purpose: don't refill from the plan today
+  render();
+  toast('My Today cleared');
+}
+
+// ---------------------------------------------------------------- plan
+// The plan is shared through the Sheet: each place carries the day it's planned for
+// and its place in that day's route.
+let openUnplanned = false, openPast = false;
+
+function renderPlan() {
+  const el = $('#planDays'), hint = $('#planHint');
+  if (!cfg.url && !cfg.demo) { hint.textContent = 'Connect to your Sheet to plan the trip.'; el.innerHTML = ''; return; }
+  if (!planReady()) {
+    hint.innerHTML = '<b>Your Sheet needs the new Code.gs to share a plan.</b> Paste it into Apps Script, then Deploy → Manage deployments → pencil → New version.';
+    el.innerHTML = ''; return;
+  }
+  const days = tripDays();
+  if (!days.length) {
+    hint.textContent = 'Add your trip dates to start planning.';
+    el.innerHTML = '<button type="button" class="btn primary wide" data-set-dates>Set trip dates</button>'; return;
+  }
+  const t = todayISO();
+  const past = days.filter(d => d < t), upcoming = days.filter(d => d >= t);
+  const unplanned = items.filter(p => !dayOf(p));
+  const missedList = items.filter(missed);
+  const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+  hint.textContent = !upcoming.length ? `The trip is over · ${plural(items.filter(p => p.been).length, 'place')} visited`
+    : [past.length ? `${plural(upcoming.length, 'day')} to go` : plural(days.length, 'day'),
+       `${items.length - unplanned.length - missedList.length} planned`, `${unplanned.length} not yet`,
+       missedList.length ? `${missedList.length} missed` : ''].filter(Boolean).join(' · ');
+
+  const pastHTML = past.length ? (() => {
+    const onPast = past.flatMap(dayItems), done = onPast.filter(p => p.been).length;
+    return `<details class="day past-days"${openPast || !upcoming.length ? ' open' : ''}>
+      <summary>Past days<span class="n">${[plural(past.length, 'day'), done ? `${done} visited` : '', missedList.length ? `${missedList.length} missed` : ''].filter(Boolean).join(' · ')}</span></summary>
+      ${past.map(d => dayHTML(d, t, true)).join('')}
+      <p class="empty-day">Went somewhere you didn't plan? Tap + on that day to add it as visited. Tap ✓ or ! to correct a place.</p>
+    </details>`;
+  })() : '';
+
+  const looseNotes = notesReady() ? notes.filter(n => !dayOf(n)).sort(byAdded) : [];
+  const looseCount = unplanned.length + looseNotes.length;
+  el.innerHTML = pastHTML + upcoming.map(d => dayHTML(d, t, false)).join('')
+    + (looseCount ? `<details class="day unplanned"${openUnplanned ? ' open' : ''}>
+      <summary>Not planned yet<span class="n">${looseCount}</span></summary>
+      ${looseNotes.length ? `<ul class="prows">${looseNotes.map(n => nrowHTML(n, true)).join('')}</ul>` : ''}
+      ${unplanned.length ? `<ol class="prows">${sortByDistanceThenAdded(unplanned).map(p => prowHTML(p, -1)).join('')}</ol>` : ''}
+    </details>` : '');
+}
+
+// One day of the plan: its notes first, then its places in route order.
+// Past days are a record you can still fix: add what you did, tick or untick, reorder.
+function dayHTML(d, t, past) {
+  const list = dayItems(d), dn = notesReady() ? dayNotes(d) : [], label = esc(dayLabel(d));
+  const add = `<button type="button" class="btn sq sm" data-addto="${d}" aria-label="Add a place${notesReady() ? ' or note' : ''} to ${label}">${ICON.plus}</button>`;
+  const mapBtn = list.some(hasPin) ? `<button type="button" class="btn sq sm" data-daymap="${d}" aria-label="Show ${label} on the map">${ICON.map}</button>` : '';
+  const body = (dn.length ? `<ul class="prows">${dn.map(n => nrowHTML(n)).join('')}</ul>` : '')
+    + (list.length ? `<ol class="prows">${list.map((p, i) => prowHTML(p, i, list.length, past)).join('')}</ol>`
+       : dn.length ? '' : `<p class="empty-day">${past ? 'Nothing recorded for this day.' : 'Nothing planned yet. Tap + to add a place or a note.'}</p>`);
+  if (past) return `<div class="past-day" data-day="${d}"><header class="day-head small"><h4>${label}</h4>${mapBtn}${add}</header>${body}</div>`;
+  return `<section class="day${d === t ? ' is-today' : ''}" data-day="${d}">
+    <header class="day-head">
+      <h3>${label}${d === t ? '<span class="tag">Today</span>' : ''}</h3>
+      <span class="n">${list.length ? list.length + (list.length === 1 ? ' place' : ' places') : ''}</span>
+      ${list.filter(hasPin).length > 2 ? `<button type="button" class="btn sq sm" data-best="${d}" aria-label="Best order for ${label}">${ICON.route}</button>` : ''}
+      ${mapBtn}${add}
+    </header>
+    ${body}
+  </section>`;
+}
+
+// A place in the plan. i < 0: not planned. On a past day the number becomes a
+// ✓ (visited) or ! (missed) you can tap to correct.
+function prowHTML(p, i, n, past) {
+  const c = catOf(p);
+  const badge = past
+    ? `<button type="button" class="num ${p.been ? 'done' : 'miss'}" data-been aria-label="${p.been ? 'Visited. Tap to mark as missed' : 'Missed. Tap to mark as visited'}">${p.been ? '✓' : '!'}</button>`
+    : `<span class="num${i < 0 ? ' emo' : ''}">${i < 0 ? CATS[c].emoji : i + 1}</span>`;
+  // One tap takes a place off its day (back to Not planned); Undo is in the message.
+  const unplan = `<button type="button" class="mv unplan" data-unplan aria-label="Take ${esc(p.name)} off this day">${ICON.x}</button>`;
+  const moves = i < 0 ? `<button type="button" class="mv" data-pick aria-label="Pick a day for ${esc(p.name)}">📅</button>`
+    : `<button type="button" class="mv" data-move="-1" aria-label="Move up"${i === 0 ? ' disabled' : ''}>${ICON.up}</button>
+       <button type="button" class="mv" data-move="1" aria-label="Move down"${i === n - 1 ? ' disabled' : ''}>${ICON.down}</button>${unplan}`;
+  return `<li class="prow cat-${c}${p.been ? ' been' : ''}${past && !p.been ? ' missed' : ''}" data-id="${esc(p.id)}">
+    ${badge}
+    <button type="button" class="pname" data-pick>${i < 0 ? '' : CATS[c].emoji + ' '}${esc(p.name || 'Untitled')}</button>
+    ${moves}
+  </li>`;
+}
+
+// A note in the plan: tap the title to read or edit it.
+function nrowHTML(n, loose) {
+  const links = linkedPlaces(n).length;
+  return `<li class="prow nrow" data-note="${esc(n.id)}">
+    <span class="num">📝</span>
+    <button type="button" class="pname" data-note-open>${esc(n.title || 'Note')}${links ? ` <span class="n">· ${links} place${links === 1 ? '' : 's'}</span>` : ''}</button>
+    ${loose ? `<button type="button" class="mv" data-note-pick aria-label="Pick a day for this note">📅</button>`
+            : `<button type="button" class="mv unplan" data-note-unplan aria-label="Take this note off its day">${ICON.x}</button>`}
+  </li>`;
+}
+
+// Change several places' days at once. The screen updates straight away; if the
+// Sheet refuses, it goes back. A message with Undo is shown when `msg` is given.
+async function planChanges(changes, msg) {
+  if (!changes.length) return;
+  const key = cfg.demo ? 'demoItems' : 'items';
+  const before = changes.map(c => items.find(x => x.id === c.id)).filter(Boolean)
+    .map(p => ({ id: p.id, day: p.day || '', dayOrder: p.dayOrder == null ? null : p.dayOrder }));
+  const apply = list => list.forEach(c => {
+    const p = items.find(x => x.id === c.id);
+    if (p) { p.day = c.day || ''; p.dayOrder = c.day ? c.dayOrder : null; }
+  });
+  apply(changes); store.set(key, items); render();
+  try {
+    const j = await api('plan', { changes });
+    (j.items || []).forEach(upsert);
+    (j.gone || []).forEach(dropLocal);
+    render();
+    if (msg) toast(msg, { label: 'Undo', fn: () => planChanges(before) });
+  } catch (e) {
+    apply(before); store.set(key, items); render(); toast(e.message);
+  }
+}
+
+// New positions for a day's places in the given order; only the ones that moved.
+function renumber(d, list) {
+  return list.map((p, k) => ({ id: p.id, day: d, dayOrder: k + 1 }))
+    .filter((c, k) => list[k].dayOrder !== c.dayOrder || dayOf(list[k]) !== d);
+}
+
+// Putting a place on a past day records that you went: it's marked visited too.
+async function setDay(p, d) {
+  if (dayOf(p) === d) return;
+  const last = d ? dayItems(d).reduce((m, x) => Math.max(m, x.dayOrder || 0), 0) : 0;
+  const change = { id: p.id, day: d, dayOrder: d ? last + 1 : null };
+  const name = p.name || 'Place';
+  if (!(d && isPastDay(d) && !p.been)) {
+    planChanges([change], d ? `${name} → ${dayLabel(d)}` : `${name} taken off the plan`);
+    return;
+  }
+  const before = { id: p.id, day: p.day || '', dayOrder: p.dayOrder == null ? null : p.dayOrder };
+  await planChanges([change]);
+  const now = items.find(x => x.id === p.id);
+  if (!now || dayOf(now) !== d) return;   // the Sheet said no; planChanges already explained
+  await toggleBeen(now);
+  toast(`${name} added to ${dayLabel(d)} as visited`, { label: 'Undo', fn: () => {
+    planChanges([before]);
+    const again = items.find(x => x.id === p.id);
+    if (again && again.been) toggleBeen(again);
+  } });
+}
+
+function movePlace(p, dir) {
+  const d = dayOf(p), list = dayItems(d), i = list.indexOf(p), j = i + dir;
+  if (!d || j < 0 || j >= list.length) return;
+  [list[i], list[j]] = [list[j], list[i]];
+  planChanges(renumber(d, list));
+}
+
+// Visiting order: nearest next place each time, then untangle crossings (2-opt).
+// The first place stays first, so you choose where the day starts.
+function routeOrder(pinned) {
+  if (pinned.length < 3) return pinned.slice();
+  const route = [pinned[0]], left = pinned.slice(1);
+  while (left.length) {
+    const last = route[route.length - 1];
+    let bi = 0;
+    left.forEach((q, k) => { if (metres(last, q) < metres(last, left[bi])) bi = k; });
+    route.push(left.splice(bi, 1)[0]);
+  }
+  for (let improved = true, pass = 0; improved && pass < 20; pass++) {
+    improved = false;
+    for (let i = 1; i < route.length - 1; i++) {
+      for (let k = i + 1; k < route.length; k++) {
+        const a = route[i - 1], b = route[i], c = route[k], e = route[k + 1];
+        const now = metres(a, b) + (e ? metres(c, e) : 0), swapped = metres(a, c) + (e ? metres(b, e) : 0);
+        if (swapped + 1 < now) { route.splice(i, k - i + 1, ...route.slice(i, k + 1).reverse()); improved = true; }
+      }
+    }
+  }
+  return route;
+}
+
+function bestOrder(d) {
+  const list = dayItems(d);
+  const ordered = routeOrder(list.filter(hasPin)).concat(list.filter(p => !hasPin(p)));
+  const ch = renumber(d, ordered);
+  if (!ch.length) toast('Already the shortest route I can find');
+  else planChanges(ch, `${dayLabel(d)} sorted by route`);
+}
+
+// Pick a day for a place or a note. Days still to come first; past days below,
+// for recording something you did (a place put there is marked visited).
+const pickSheet = $('#pickSheet');
+let pick = null;   // { kind: 'place' | 'note', id }
+function openPlanPick(obj, kind = 'place') {
+  if (!planOn()) { setView('plan'); return; }
+  pick = { kind, id: obj.id };
+  const cur = dayOf(obj), t = todayISO(), all = tripDays();
+  const up = all.filter(d => d >= t), past = all.filter(d => d < t);
+  $('#pickTitle').textContent = kind === 'note' ? `📝 ${obj.title || 'Note'}` : (obj.name || 'Plan');
+  const count = d => { const n = dayItems(d).length; return n ? n + (n === 1 ? ' place' : ' places') : ''; };
+  const btn = d => `<button type="button" class="btn" data-setday="${d}" aria-pressed="${cur === d}">
+      <span>${esc(dayLabel(d))}${d === t ? ' · Today' : ''}</span><span class="n">${count(d)}</span></button>`;
+  $('#pickDays').innerHTML = up.map(btn).join('')
+    + (past.length ? `<h4 class="pick-sub">Past days${kind === 'place' && !obj.been ? ' · marks it visited' : ''}</h4>` + past.slice().reverse().map(btn).join('') : '')
+    + (cur ? '<button type="button" class="btn ghost danger" data-setday="">Take it off the plan</button>' : '');
+  pickSheet.showModal();
+}
+
+// ---------------------------------------------------------------- notes
+// Notes are free text for the trip, shared through the Sheet like places. A note can sit
+// on a day of the plan and be linked to any number of places.
+function upsertNote(note) {
+  const i = notes.findIndex(x => x.id === note.id);
+  if (i >= 0) notes[i] = note; else notes.push(note);
+  saveNotesLocal();
+}
+
+// Change some of a note's fields. The screen updates straight away; if the Sheet
+// refuses, it goes back. With `msg`, the message offers Undo.
+async function noteChange(id, fields, msg) {
+  const n = notes.find(x => x.id === id); if (!n) return;
+  const before = {};
+  for (const k of Object.keys(fields)) before[k] = n[k] == null ? '' : n[k];
+  Object.assign(n, fields); saveNotesLocal(); render();
+  try {
+    const j = await api('noteUpdate', { id, fields });
+    upsertNote(j.note); render();
+    if (msg) toast(msg, { label: 'Undo', fn: () => noteChange(id, before) });
+  } catch (e) {
+    if (e.gone) { notes = notes.filter(x => x.id !== id); saveNotesLocal(); render(); toast(e.message); return; }
+    Object.assign(n, before); saveNotesLocal(); render(); toast(e.message);
+  }
+}
+
+function setNoteDay(n, d) {
+  if (dayOf(n) === d) return;
+  const title = n.title || 'Note';
+  noteChange(n.id, { day: d }, d ? `📝 ${title} → ${dayLabel(d)}` : `📝 ${title} taken off the plan`);
+}
+
+// The note card in the List and My Today.
+function noteCardHTML(n) {
+  const d = planOn() ? dayOf(n) : null;
+  const chip = d == null ? ''
+    : `<button type="button" class="daychip${d ? ' set' : ''}" data-note-pick aria-label="${d ? 'On ' + esc(dayLabel(d)) + '. Change day' : 'Put this note on a day'}">📅 ${d ? esc(dayLabel(d)) : 'Plan'}</button>`;
+  const links = linkedPlaces(n);
+  return `<article class="card note" data-note="${esc(n.id)}">
+    <div class="cat-row"><p class="cat-tag">📝 Note</p>${chip}</div>
+    <div class="card-head"><h3>${esc(n.title || 'Note')}</h3></div>
+    ${n.text ? `<p class="why">${esc(n.text)}</p>` : ''}
+    ${links.length ? `<div class="linkrow">${links.map(p => `<button type="button" class="linkchip" data-goto="${esc(p.id)}">${CATS[catOf(p)].emoji} ${esc(p.name || 'Untitled')}</button>`).join('')}</div>` : ''}
+    <div class="actions"><button type="button" class="btn" data-note-open>${ICON.edit}Edit</button></div>
+  </article>`;
+}
+
+// ----- the note editor
+const noteSheet = $('#noteSheet');
+let noteEditing = null, noteLinksDraft = new Set();
+
+function openNote(n, preset = {}) {
+  noteEditing = n ? n.id : null;
+  $('#noteHead').textContent = n ? 'Edit note' : 'New note';
+  $('#nTitle').value = n ? n.title || '' : '';
+  $('#nText').value = n ? n.text || '' : '';
+  const t = todayISO(), all = tripDays(), cur = n ? dayOf(n) : (preset.day || '');
+  const opt = d => `<option value="${d}"${cur === d ? ' selected' : ''}>${esc(dayLabel(d))}${d === t ? ' · today' : ''}</option>`;
+  const up = all.filter(d => d >= t), past = all.filter(d => d < t);
+  $('#nDay').innerHTML = `<option value="">Not on a day</option>`
+    + (past.length ? `<optgroup label="Coming up">${up.map(opt).join('')}</optgroup><optgroup label="Past days">${past.map(opt).join('')}</optgroup>` : up.map(opt).join(''));
+  $('#nDayRow').hidden = !planOn();
+  noteLinksDraft = new Set(n ? noteLinkIds(n).filter(id => items.some(p => p.id === id)) : (preset.links || []));
+  $('#nLinkSearch').value = ''; $('#nLinkBox').open = false;
+  renderNoteLinks(); renderLinkPick();
+  $('#noteDel').hidden = !n; resetNoteDel();
+  setStatus($('#noteStatus'), '', '');
+  $('#noteSave').disabled = false; $('#noteSave').textContent = 'Save';
+  noteSheet.showModal();
+  if (!n) setTimeout(() => $('#nTitle').focus(), 50);
+}
+
+function renderNoteLinks() {
+  const list = [...noteLinksDraft].map(id => items.find(p => p.id === id)).filter(Boolean);
+  $('#nLinks').innerHTML = list.length
+    ? list.map(p => `<span class="linkchip">${CATS[catOf(p)].emoji} ${esc(p.name || 'Untitled')}<button type="button" data-unlink="${esc(p.id)}" aria-label="Unlink ${esc(p.name)}">×</button></span>`).join('')
+    : '<p class="hint" style="margin:0">No places linked yet.</p>';
+}
+
+function renderLinkPick() {
+  const q = fold($('#nLinkSearch').value.trim());
+  const list = items.filter(p => !q || fold(p.name).includes(q))
+    .sort((a, b) => String(a.name).localeCompare(String(b.name)));
+  $('#nLinkPick').innerHTML = list.map(p => `<label class="lrow"><input type="checkbox" data-link="${esc(p.id)}"${noteLinksDraft.has(p.id) ? ' checked' : ''}>
+      <span>${CATS[catOf(p)].emoji} ${esc(p.name || 'Untitled')}</span>${dayOf(p) ? `<span class="n">${esc(dayLabel(dayOf(p)))}</span>` : ''}</label>`).join('')
+    || '<p class="hint" style="padding:10px 12px;margin:0">No places match.</p>';
+}
+
+async function saveNote(ev) {
+  ev.preventDefault();
+  const title = $('#nTitle').value.trim();
+  if (!title) { setStatus($('#noteStatus'), 'bad', '<div>Give the note a title.</div>'); $('#nTitle').focus(); return; }
+  const existing = noteEditing && notes.find(x => x.id === noteEditing);
+  const fields = {
+    title, text: $('#nText').value.trim(),
+    day: planOn() ? $('#nDay').value : (existing ? existing.day || '' : ''),
+    links: [...noteLinksDraft].join(','),
+  };
+  const btn = $('#noteSave');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    if (existing) {
+      // Only what changed, so an edit on another phone isn't undone.
+      const changed = {};
+      for (const k of Object.keys(fields)) if (String(fields[k]) !== String(existing[k] == null ? '' : existing[k])) changed[k] = fields[k];
+      if (Object.keys(changed).length) { const j = await api('noteUpdate', { id: existing.id, fields: changed }); upsertNote(j.note); }
+      toast('Note saved');
+    } else {
+      const j = await api('noteAdd', fields);
+      upsertNote(j.note);
+      toast(fields.day ? `Note added to ${dayLabel(fields.day)}` : 'Note added');
+    }
+    noteSheet.close(); render();
+  } catch (e) {
+    if (e.gone) { notes = notes.filter(x => x.id !== noteEditing); saveNotesLocal(); noteSheet.close(); render(); toast(e.message); return; }
+    setStatus($('#noteStatus'), 'bad', `<div>${esc(e.message)}</div>`);
+  } finally { btn.disabled = false; btn.textContent = 'Save'; }
+}
+
+// Delete takes two taps, like places. Undo brings the note back.
+let noteDelTimer;
+function resetNoteDel() { const b = $('#noteDel'); b.classList.remove('armed'); b.textContent = 'Delete'; }
+async function deleteNote() {
+  const b = $('#noteDel');
+  const n = notes.find(x => x.id === noteEditing); if (!n) return;
+  if (!b.classList.contains('armed')) {
+    b.classList.add('armed'); b.textContent = 'Tap again to delete';
+    clearTimeout(noteDelTimer); noteDelTimer = setTimeout(resetNoteDel, 4000); return;
+  }
+  resetNoteDel(); noteSheet.close();
+  try {
+    await api('noteDelete', { id: n.id });
+    notes = notes.filter(x => x.id !== n.id); saveNotesLocal(); render();
+    toast(`Deleted 📝 ${n.title}`, { label: 'Undo', fn: async () => {
+      try { const j = await api('noteAdd', { title: n.title, text: n.text, day: n.day, links: n.links }); upsertNote(j.note); render(); }
+      catch (e) { toast(e.message); }
+    } });
+  } catch (e) { toast(e.message); }
+}
+
+// Jump from a note to one of its places: on the map if it has a pin, else in the List.
+function gotoPlace(p) {
+  if (noteSheet.open) noteSheet.close();
+  filter = 'all'; query = ''; planFilter = ''; $('#search').value = '';
+  if (hasPin(p)) {
+    setView('map'); render();
+    const go = () => { if (!mainScope.map) return setTimeout(go, 150); mainScope.map.setView([p.lat, p.lng], 16); showPeek(mainScope, p); drawMarkers(mainScope); };
+    go(); return;
+  }
+  if (p.been && !showVisited) { showVisited = true; store.set('showVisited', true); }
+  setView('list'); render();
+  const card = document.querySelector(`#list .card[data-id="${CSS.escape(p.id)}"]`);
+  if (card) { card.scrollIntoView({ behavior: 'smooth', block: 'center' }); card.classList.add('flash'); setTimeout(() => card.classList.remove('flash'), 1600); }
+}
+
+// ----- add a place or a note to one day
+const addSheet = $('#addSheet');
+let addDay = '';
+function openAddTo(d) {
+  addDay = d;
+  $('#addTitle').textContent = `Add to ${dayLabel(d)}`;
+  $('#addHint').textContent = isPastDay(d) ? 'A past day: places you add here are marked visited.' : '';
+  $('#addHint').hidden = !isPastDay(d);
+  $('#addNewNote').hidden = !notesReady();
+  $('#addSearch').value = '';
+  renderAddList();
+  addSheet.showModal();
+}
+function renderAddList() {
+  const q = fold($('#addSearch').value.trim());
+  const where = x => dayOf(x) ? dayLabel(dayOf(x)) : 'Not planned';
+  const places = items.filter(p => dayOf(p) !== addDay && (!q || fold(p.name).includes(q)))
+    .sort((a, b) => (!!dayOf(a) - !!dayOf(b)) || String(a.name).localeCompare(String(b.name)));
+  const ns = notesReady() ? notes.filter(n => dayOf(n) !== addDay && (!q || fold(n.title).includes(q) || fold(n.text).includes(q))) : [];
+  $('#addList').innerHTML =
+    (ns.length ? `<h4>Notes</h4>${ns.map(n => `<button type="button" class="addrow" data-add-note="${esc(n.id)}"><span>📝 ${esc(n.title || 'Note')}</span><span class="n">${esc(where(n))}</span></button>`).join('')}` : '')
+    + (places.length ? `<h4>Places</h4>${places.map(p => `<button type="button" class="addrow" data-add-place="${esc(p.id)}"><span>${CATS[catOf(p)].emoji} ${esc(p.name || 'Untitled')}</span><span class="n">${esc(where(p))}${p.been ? ' · ✓' : ''}</span></button>`).join('')}` : '')
+    || `<p class="hint">${q ? 'Nothing matches.' : 'Everything is already on this day.'}</p>`;
+}
+
+// ---------------------------------------------------------------- settings
+const setSheet = $('#setSheet');
+let tripAtOpen = { trip: '', near: '' };
+let pendingJoin = null;        // a link for a different Sheet, waiting for "switch"
+
+function openSettings(focusTrip) {
+  const isConn = connected();
+  $('#tripForm').hidden = !(isConn || cfg.demo);
+  $('#connBox').hidden = !isConn;
+  const needsKey = isConn && syncProblem === 'auth';
+  $('#connForm').hidden = isConn && !needsKey;
+  $('#connForm').classList.toggle('sep', isConn);
+  $('#tripHint').textContent = cfg.demo ? 'Demo: these stay on this phone.' : 'Shared with every phone on this Sheet.';
+  $('#sTrip').value = tripName(); $('#sNear').value = tripArea();
+  $('#sStart').value = tripStart() || ''; $('#sEnd').value = tripEnd() || '';
+  tripAtOpen = { trip: tripName(), near: tripArea(), start: tripStart() || '', end: tripEnd() || '' };
+  $('#sUrl').value = ''; $('#sKey').value = ''; $('#keyRow').hidden = false;
+  $('#kvUrl').textContent = cfg.url; $('#kvKey').textContent = cfg.key;
+  $('#demoBtn').textContent = cfg.demo ? 'Leave demo' : 'Try demo';
+  resetDisconnect();
+  ['#setStatus', '#tripStatus'].forEach(id => setStatus($(id), '', ''));
+  if (pendingJoin) {
+    setStatus($('#joinStatus'), 'bad', `<div><b>That link is for a different Sheet.</b><small>Switching shows that Sheet's places on this phone instead. Nothing is deleted from either Sheet.</small><br><button type="button" class="btn primary" data-switch>Switch to that Sheet</button></div>`);
+  } else if (needsKey) {
+    setStatus($('#joinStatus'), 'bad', '<div><b>The key for this Sheet has changed.</b><small>Paste a fresh link from a phone that still works, or the web app URL and the new key.</small></div>');
+  } else setStatus($('#joinStatus'), '', '');
+  if (!setSheet.open) setSheet.showModal();
+  if (focusTrip) setTimeout(() => $('#sTrip').focus(), 60);
+}
+
+// ----- join links: https://…/#join=<url and key>
+const b64e = s => btoa(unescape(encodeURIComponent(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const b64d = s => decodeURIComponent(escape(atob(s.replace(/-/g, '+').replace(/_/g, '/'))));
+function joinLink() {
+  return location.origin + location.pathname + '#join=' + b64e(JSON.stringify({ u: cfg.url, k: cfg.key }));
+}
+function parseJoin(text) {
+  const m = String(text || '').match(/[#&?]join=([A-Za-z0-9_-]+)/);
+  if (!m) return null;
+  try { const o = JSON.parse(b64d(m[1])); return o.u ? { url: o.u, key: o.k || '' } : null; } catch (e) { return null; }
+}
+const validUrl = u => /^https:\/\/script\.google(usercontent)?\.com\/.+\/exec$/.test(u);
+
+// One place where a phone connects to a Sheet. Nothing about this phone changes
+// unless the Sheet answers with the right key.
+async function connectTo(url, key) {
+  const j = await apiCall('list', {}, { url, key });
+  ++refreshSeq;                                          // ignore any refresh from before the switch
+  const newSheet = url !== cfg.url;
+  cfg.url = url; cfg.key = key; cfg.demo = false;
+  if (newSheet) { cfg.trip = ''; cfg.near = ''; }        // never carry one Sheet's trip into another
+  const st = j.settings || {};
+  if (st.set) { cfg.trip = st.trip; cfg.near = st.near; }
+  cfg.start = st.start || ''; cfg.end = st.end || ''; cfg.planReady = !!st.plan; cfg.notesReady = !!st.notes;
+  store.set('cfg', cfg);
+  items = j.items || []; store.set('items', items);
+  notes = j.notes || []; store.set('notes', notes);
+  lastSync = Date.now(); offline = false; syncProblem = ''; warnedAuth = false;
+  pendingJoin = null;
+  render();
+  return { named: !!st.set };
+}
+
+async function afterConnect(res, via) {
+  if (res.named) {
+    if (setSheet.open) setSheet.close();
+    toast(`Connected${cfg.trip ? ': ' + cfg.trip : ''}`);
+  } else {
+    // First phone on a brand-new Sheet: ask for the trip details, once.
+    openSettings(true);
+    setStatus($('#tripStatus'), 'ok', '<div>✓</div><div><b>Connected.</b><small>Now name this trip. Every phone that joins picks it up.</small></div>');
+  }
+}
+
+async function submitConnect(ev) {
+  ev.preventDefault();
+  const raw = $('#sUrl').value.trim();
+  const join = parseJoin(raw);
+  const url = join ? join.url : raw;
+  const key = join ? join.key : $('#sKey').value.trim();
+  if (!validUrl(url)) {
+    setStatus($('#setStatus'), 'bad', '<div>Paste either the link another phone sent you, or the Apps Script web app URL (it starts with https://script.google.com/macros/s/ and ends in /exec).</div>');
+    return;
+  }
+  if (!key) { setStatus($('#setStatus'), 'bad', '<div>Add the key too. It’s in the Apps Script execution log.</div>'); $('#sKey').focus(); return; }
+  setStatus($('#setStatus'), 'show', '<div class="spinner"></div><div>Connecting…</div>');
+  $('#connectBtn').disabled = true;
+  try { await afterConnect(await connectTo(url, key)); }
+  catch (e) {
+    if (e.network) setStatus($('#setStatus'), 'bad', troubleHTML(url)); else
+    setStatus($('#setStatus'), 'bad', `<div><b>Couldn’t connect</b><small>${esc(e.auth ? 'The key doesn’t match this Sheet.' : e.message)}</small></div>`);
+  } finally { $('#connectBtn').disabled = false; }
+}
+
+// Trip details: send only what changed, so two phones editing different
+// fields don't undo each other.
+async function submitTrip(ev) {
+  ev.preventDefault();
+  const now = { trip: $('#sTrip').value.trim(), near: $('#sNear').value.trim(), start: $('#sStart').value, end: $('#sEnd').value };
+  if (now.start && now.end && now.end < now.start) {
+    setStatus($('#tripStatus'), 'bad', '<div>The last day is before the first day.</div>'); return;
+  }
+  if (now.start && now.end && tripSpan(now.start, now.end) > 60) {
+    setStatus($('#tripStatus'), 'bad', '<div>Plans go up to 60 days. Pick a shorter trip.</div>'); return;
+  }
+  const changed = {};
+  for (const k of ['trip', 'near', 'start', 'end']) if (now[k] !== tripAtOpen[k]) changed[k] = now[k];
+  if (!Object.keys(changed).length) { setSheet.close(); return; }
+  if (cfg.demo) {
+    if ('trip' in changed) cfg.demoTrip = changed.trip;
+    if ('near' in changed) cfg.demoNear = changed.near;
+    if ('start' in changed) cfg.demoStart = changed.start;
+    if ('end' in changed) cfg.demoEnd = changed.end;
+    store.set('cfg', cfg); setSheet.close(); render(); return;
+  }
+  if (('start' in changed || 'end' in changed) && !cfg.planReady) {
+    setStatus($('#tripStatus'), 'bad', '<div><b>Your Sheet needs the new Code.gs for trip dates.</b><small>Paste it into Apps Script and deploy a New version, then try again.</small></div>');
+    return;
+  }
+  $('#tripSave').disabled = true;
+  try {
+    const j = await api('settings', changed);
+    cfg.trip = j.settings.trip; cfg.near = j.settings.near;
+    cfg.start = j.settings.start || ''; cfg.end = j.settings.end || ''; cfg.planReady = !!j.settings.plan;
+    store.set('cfg', cfg);
+    setSheet.close(); render(); toast('Trip details updated on every phone');
+  } catch (e) {
+    setStatus($('#tripStatus'), 'bad', `<div>${esc(e.message)}</div>`);
+  } finally { $('#tripSave').disabled = false; }
+}
+
+async function invite() {
+  const link = joinLink();
+  const text = `Join ${cfg.trip || 'our trip'} on Trip Pins. Open this on your phone:`;
+  try {
+    if (navigator.share) { await navigator.share({ title: 'Trip Pins', text, url: link }); return; }
+  } catch (e) { if (e.name === 'AbortError') return; }
+  try { await navigator.clipboard.writeText(link); toast('Link copied. Send it to the other phone.'); }
+  catch (e) { prompt('Copy this link and send it to the other phone:', link); }
+}
+
+let discTimer;
+function resetDisconnect() { const b = $('#disconnectBtn'); b.classList.remove('armed'); b.textContent = 'Disconnect this phone'; }
+function disconnect() {
+  const b = $('#disconnectBtn');
+  if (!b.classList.contains('armed')) {
+    b.classList.add('armed'); b.textContent = 'Tap again: this phone forgets the Sheet';
+    clearTimeout(discTimer); discTimer = setTimeout(resetDisconnect, 4000); return;
+  }
+  Object.assign(cfg, { url: '', key: '', trip: '', near: '', start: '', end: '', planReady: false, notesReady: false });
+  notes = []; store.set('notes', []);
+  store.set('cfg', cfg); items = []; store.set('items', []);
+  syncProblem = ''; offline = false;
+  setSheet.close(); render(); toast('Disconnected. Your places are still in the Sheet.');
+}
+
+function toggleDemo() {
+  cfg.demo = !cfg.demo; store.set('cfg', cfg);
+  items = cfg.demo ? store.get('demoItems', DEMO_ITEMS) : store.get('items', []);
+  notes = cfg.demo ? store.get('demoNotes', DEMO_NOTES) : store.get('notes', []);
+  if (setSheet.open) setSheet.close();
+  render(); refresh(true);
+  toast(cfg.demo ? 'Demo mode: changes stay on this phone' : 'Demo off');
+}
+
+// A join link was opened (or pasted into the address bar).
+async function handleJoin(j) {
+  if (connected() && j.url === cfg.url) {
+    if (j.key !== cfg.key) {                               // the key was changed: take the new one
+      try { await afterConnect(await connectTo(j.url, j.key)); } catch (e) { toast('That link didn’t work: ' + e.message); }
+    } else toast('This phone is already connected to that Sheet');
+    return;
+  }
+  if (connected()) { pendingJoin = j; openSettings(); return; }   // different Sheet: ask first
+  toast('Connecting…');
+  try { await afterConnect(await connectTo(j.url, j.key)); }
+  catch (e) { openSettings(); if (e.network) setStatus($('#setStatus'), 'bad', troubleHTML(j.url)); else setStatus($('#setStatus'), 'bad', `<div><b>That link didn’t work</b><small>${esc(e.auth ? 'The key has changed since it was sent. Ask for a fresh link.' : e.message)}</small></div>`); }
+}
+
+// ---------------------------------------------------------------- events
+document.addEventListener('click', e => {
+  const t = e.target.closest('button, a');
+  if (!t) return;
+  if (t.matches('[data-close]')) { t.closest('dialog').close(); return; }
+  if (t.matches('[data-open-settings]')) { openSettings(); return; }
+  if (t.matches('[data-demo]')) { toggleDemo(); return; }
+  if (t.matches('[data-switch]')) {
+    const j = pendingJoin; pendingJoin = null; setStatus($('#joinStatus'), '', '');
+    connectTo(j.url, j.key).then(afterConnect).catch(err => toast('That link didn\u2019t work: ' + err.message));
+    return;
+  }
+  if (t.dataset.copy) {
+    const v = $('#' + t.dataset.copy).textContent;
+    navigator.clipboard.writeText(v).then(() => toast('Copied')).catch(() => prompt('Copy:', v));
+    return;
+  }
+  if (t.dataset.f) { filter = t.dataset.f; hidePeek(mainScope); render(); if (mainScope.map) fitAll(mainScope); return; }
+  if (t.hasAttribute('data-visited')) {
+    showVisited = !showVisited; store.set('showVisited', showVisited);
+    toast(showVisited ? 'Showing visited places' : 'Visited places hidden in the List, faded on the Map');
+    render(); return;
+  }
+  if (t.hasAttribute('data-near')) { startLocating(true); return; }
+  if (t.hasAttribute('data-clear-today')) { clearTodayTap(); return; }
+  if (t.dataset.cat) { chosenCat = t.dataset.cat; catButtons(chosenCat); return; }
+  // ----- notes
+  if (t.hasAttribute('data-notes')) {
+    showDayNotes = !showDayNotes; store.set('showDayNotes', showDayNotes); render(); return;
+  }
+  if (t.dataset.openNote) { const n = notes.find(x => x.id === t.dataset.openNote); if (n) openNote(n); return; }
+  if (t.dataset.goto) { const p = items.find(x => x.id === t.dataset.goto); if (p) gotoPlace(p); return; }
+  if (t.dataset.unlink) { noteLinksDraft.delete(t.dataset.unlink); renderNoteLinks(); renderLinkPick(); return; }
+  const noteEl = t.closest('[data-note]');
+  if (noteEl) {
+    const n = notes.find(x => x.id === noteEl.dataset.note); if (!n) return;
+    if (t.hasAttribute('data-note-open')) openNote(n);
+    else if (t.hasAttribute('data-note-pick')) openPlanPick(n, 'note');
+    else if (t.hasAttribute('data-note-unplan')) setNoteDay(n, '');
+    return;
+  }
+  // ----- adding to one day
+  if (t.dataset.addto) { openAddTo(t.dataset.addto); return; }
+  if (t.hasAttribute('data-newnote-day')) { addSheet.close(); openNote(null, { day: addDay }); return; }
+  if (t.dataset.addPlace) {
+    const p = items.find(x => x.id === t.dataset.addPlace);
+    if (p) setDay(p, addDay).then(renderAddList);
+    return;
+  }
+  if (t.dataset.addNote) {
+    const n = notes.find(x => x.id === t.dataset.addNote);
+    if (n) { setNoteDay(n, addDay); renderAddList(); }
+    return;
+  }
+  // ----- plan
+  if (t.hasAttribute('data-setday')) {
+    const p = pick && (pick.kind === 'note' ? notes : items).find(x => x.id === pick.id);
+    pickSheet.close();
+    if (p) pick.kind === 'note' ? setNoteDay(p, t.dataset.setday) : setDay(p, t.dataset.setday);
+    return;
+  }
+  if (t.hasAttribute('data-set-dates')) { openSettings(); setTimeout(() => $('#sStart').focus(), 60); return; }
+  if (t.hasAttribute('data-load-plan')) {
+    dayItems(todayISO()).forEach(p => todayIds.add(p.id)); saveTodayIds(); render(); return;
+  }
+  if (t.dataset.best) { bestOrder(t.dataset.best); return; }
+  if (t.dataset.daymap) {
+    // Just that day on the map: clear other filters so every stop shows.
+    planFilter = t.dataset.daymap; filter = 'all'; query = ''; $('#search').value = '';
+    setView('map'); render();
+    const go = () => { if (!mainScope.map) return setTimeout(go, 150); fitAll(mainScope); };
+    go(); return;
+  }
+  const row = t.closest('.prow');
+  if (row) {
+    const p = items.find(x => x.id === row.dataset.id); if (!p) return;
+    if (t.dataset.move) movePlace(p, +t.dataset.move);
+    else if (t.hasAttribute('data-been')) toggleBeen(p);
+    else if (t.hasAttribute('data-unplan')) setDay(p, '');
+    else if (t.hasAttribute('data-pick')) openPlanPick(p);
+    return;
+  }
+  const card = t.closest('.card'); if (!card) return;
+  const p = items.find(x => x.id === card.dataset.id); if (!p) return;
+  const act = t.dataset.act;
+  const inToday = !!card.closest('#todayView');
+  if (act === 'edit') openEdit(p);
+  else if (act === 'been') toggleBeen(p);
+  else if (act === 'today') { toggleToday(p); render(); }
+  else if (act === 'plan') openPlanPick(p);
+  else if (act === 'map') {
+    const scope = inToday ? todayScope : mainScope;
+    if (inToday) { setView('today'); setTodayInner('map'); } else setView('map');
+    const go = () => { if (!scope.map) return setTimeout(go, 150); scope.map.setView([p.lat, p.lng], 16); showPeek(scope, p); drawMarkers(scope); };
+    go();
+  }
+});
+// Tap outside a sheet (on the dim backdrop) to close it.
+document.querySelectorAll('dialog.sheet').forEach(d => d.addEventListener('click', e => { if (e.target === d) d.close(); }));
+
+$('#tabList').onclick = () => setView('list');
+$('#tabMap').onclick = () => setView('map');
+$('#tabToday').onclick = () => setView('today');
+$('#tabPlan').onclick = () => setView('plan');
+$('#search').addEventListener('input', () => { query = $('#search').value.trim(); hidePeek(mainScope); render(); });
+document.addEventListener('change', e => {
+  if (e.target.dataset && e.target.dataset.link) {
+    if (e.target.checked) noteLinksDraft.add(e.target.dataset.link); else noteLinksDraft.delete(e.target.dataset.link);
+    renderNoteLinks(); return;
+  }
+  if (e.target.id !== 'dayPick') return;
+  planFilter = e.target.value; hidePeek(mainScope); render();
+  if (mainScope.map) fitAll(mainScope);
+});
+$('#noteForm').addEventListener('submit', saveNote);
+$('#noteDel').onclick = deleteNote;
+$('#noteFab').onclick = () => openNote(null, planFilter && planFilter !== 'none' && planOn() ? { day: planFilter } : {});
+$('#nLinkSearch').addEventListener('input', renderLinkPick);
+$('#nTitle').addEventListener('input', () => setStatus($('#noteStatus'), '', ''));
+$('#addSearch').addEventListener('input', renderAddList);
+document.addEventListener('toggle', e => {
+  if (!e.target.matches) return;
+  if (e.target.matches('details.unplanned')) openUnplanned = e.target.open;
+  if (e.target.matches('details.past-days')) openPast = e.target.open;
+}, true);
+$('#todayTabList').onclick = () => setTodayInner('list');
+$('#todayTabMap').onclick = () => setTodayInner('map');
+$('#todayFitBtn').onclick = () => fitAll(todayScope);
+$('#todayLocBtn').onclick = () => { if (pos && todayScope.map) todayScope.map.setView([pos.lat, pos.lng], 16); else startLocating(true); };
+$('#fab').onclick = () => openAdd('');
+$('#settingsBtn').onclick = openSettings;
+
+// ----- help: shows Android or iPhone steps, guessing from the phone first
+const helpSheet = $('#helpSheet');
+function setHelpOS(os) {
+  helpSheet.dataset.os = os;
+  helpSheet.querySelectorAll('[data-help-os]').forEach(b => b.setAttribute('aria-selected', b.dataset.helpOs === os));
+}
+helpSheet.querySelectorAll('[data-help-os]').forEach(b => b.onclick = () => setHelpOS(b.dataset.helpOs));
+$('#helpBtn').onclick = () => {
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  setHelpOS(ios ? 'ios' : 'android');
+  helpSheet.showModal();
+  helpSheet.scrollTop = 0;
+};
+$('#syncBtn').onclick = () => refresh(false);
+$('#fitBtn').onclick = () => fitAll(mainScope);
+$('#locBtn').onclick = () => { if (pos && mainScope.map) mainScope.map.setView([pos.lat, pos.lng], 16); else startLocating(true); };
+$('#placeForm').addEventListener('submit', savePlace);
+$('#connForm').addEventListener('submit', submitConnect);
+$('#tripForm').addEventListener('submit', submitTrip);
+$('#inviteBtn').onclick = invite;
+$('#disconnectBtn').onclick = disconnect;
+$('#sUrl').addEventListener('input', () => { $('#keyRow').hidden = !!parseJoin($('#sUrl').value); });
+$('#pasteLinkBtn').onclick = async () => {
+  try { const t = await navigator.clipboard.readText(); if (t) { $('#sUrl').value = t.trim(); $('#keyRow').hidden = !!parseJoin(t); return; } } catch (e) {}
+  $('#sUrl').focus(); toast('Long-press the box and choose Paste');
+};
+setSheet.addEventListener('close', () => { pendingJoin = null; });
+$('#demoBtn').onclick = toggleDemo;
+$('#delBtn').onclick = deletePlace;
+$('#relocBtn').onclick = () => {
+  const q = [$('#fName').value, $('#fAddr').value].map(s => s.trim()).filter(Boolean).join(', ');
+  lookUp(q, true);
+};
+$('#q').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); clearTimeout(typeTimer); lookUp($('#q').value); $('#fWhy').focus(); } });
+$('#q').addEventListener('input', () => {
+  clearTimeout(typeTimer);
+  const v = $('#q').value;
+  // Links look up straight away; typed names wait for a pause.
+  typeTimer = setTimeout(() => lookUp(v), /https?:\/\//.test(v) ? 50 : 900);
+});
+$('#pasteBtn').onclick = async () => {
+  try {
+    const t = await navigator.clipboard.readText();
+    if (t) { $('#q').value = t; lookUp(t); $('#fWhy').focus(); return; }
+  } catch (e) {}
+  $('#q').focus(); toast('Long-press the box and choose Paste');
+};
+document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(true); });
+setInterval(() => {
+  if (!document.hidden && !document.querySelector('dialog[open]') && navigator.onLine) refresh(true);
+}, 90000);
+window.addEventListener('resize', () => {
+  if (view === 'map') { setTopH(); mainScope.map && mainScope.map.invalidateSize(); }
+  else if (view === 'today') { setTopH(); if (todayInner === 'map') todayScope.map && todayScope.map.invalidateSize(); }
+});
+
+// ---------------------------------------------------------------- start
+render();
+try {
+  if (store.get('locOk', false)) startLocating(false);
+  else if (navigator.permissions) navigator.permissions.query({ name: 'geolocation' }).then(s => { if (s.state === 'granted') startLocating(false); }).catch(() => {});
+} catch (e) {}
+refresh(true);
+
+// Opened from a join link: connect, then scrub the key out of the address bar and history.
+function checkJoinInUrl() {
+  const j = parseJoin(location.hash);
+  if (!j) return;
+  history.replaceState(null, '', location.pathname + location.search);
+  handleJoin(j);
+}
+checkJoinInUrl();
+window.addEventListener('hashchange', checkJoinInUrl);   // link opened while the app was already open
+
+// Something shared to the app (Android share sheet), or ?add= in the URL.
+const sp = new URLSearchParams(location.search);
+const shared = [sp.get('title'), sp.get('text'), sp.get('url'), sp.get('add')]
+  .filter(Boolean).filter((v, i, a) => a.indexOf(v) === i && !a.some((w, j) => j !== i && w.includes(v) && w !== v)).join('\n');
+if (shared) {
+  history.replaceState(null, '', location.pathname);
+  if (!cfg.url && !cfg.demo) { openSettings(); toast('Connect first, then share again'); }
+  else openAdd(shared);
+}
+
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+})();
+</script>
+</body>
+</html>
