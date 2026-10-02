@@ -25,6 +25,7 @@
   --eat: #D9480F; --drink: #7B3FA0; --see: #1F6F8B; --shop: #B07D00; --outdoors: #2F7D4F; --other: #6B6257;
   --shadow: 0 1px 2px rgba(60,40,10,.06), 0 4px 14px rgba(60,40,10,.06);
   --today-bg: #EAEAFB; --today-card: #FAFAFF; --today-line: #D3D2F2; --today-accent: #4A47C7;
+  --note-bg: #FFF6CC; --note-line: #EBD98A; --note-ink: #8A6A00;
   --display: "Fraunces", Georgia, "Times New Roman", serif;
   --body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   color-scheme: light;
@@ -36,6 +37,7 @@
     --eat: #F0692E; --drink: #B37ADB; --see: #4FA8C7; --shop: #D9A92E; --outdoors: #5DBB84; --other: #A89F92;
     --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 14px rgba(0,0,0,.25);
     --today-bg: #191A30; --today-card: #232447; --today-line: #383A66; --today-accent: #9694F0;
+  --note-bg: #2E2A17; --note-line: #4D4524; --note-ink: #E3C766;
     color-scheme: dark;
   }
 }
@@ -44,6 +46,7 @@
   --accent: #F0692E; --soft: #2A251F; --ok: #5DBB84; --warn: #E0A04A;
   --eat: #F0692E; --drink: #B37ADB; --see: #4FA8C7; --shop: #D9A92E; --outdoors: #5DBB84; --other: #A89F92;
   --today-bg: #191A30; --today-card: #232447; --today-line: #383A66; --today-accent: #9694F0;
+  --note-bg: #2E2A17; --note-line: #4D4524; --note-ink: #E3C766;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -67,6 +70,7 @@ a { color: inherit; }
   font: 700 26px/1.1 var(--display); margin: 0; flex: 1; min-width: 0;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -.01em;
 }
+.betatag { flex: none; font: 700 11px/1 var(--body); letter-spacing: .06em; color: #fff; background: #C0392B; border-radius: 6px; padding: 5px 7px; }
 .sub { font-size: 13px; color: var(--muted); margin: 2px 0 10px; min-height: 18px; }
 .sub .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--ok); margin-right: 5px; vertical-align: 1px; }
 .sub.off .dot { background: var(--warn); }
@@ -194,6 +198,43 @@ details.past-days { background: var(--soft); box-shadow: none; }
 .hidden-note { text-align: center; font-size: 13px; color: var(--muted); margin: 6px 0 0; }
 .linkish { border: 0; background: none; padding: 4px; color: var(--accent); font-weight: 600; font-size: 13px; }
 
+/* ---------- notes ---------- */
+.card.note { background: var(--note-bg); border-color: var(--note-line); border-left-color: var(--note-ink); }
+.card.note .cat-tag { color: var(--note-ink); }
+.card.note .why { background: color-mix(in srgb, var(--note-line) 35%, var(--note-bg)); }
+.card.note .actions .btn { height: 36px; }
+.linkrow { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.linkchip, .notechip {
+  display: inline-flex; align-items: center; gap: 4px; max-width: 100%;
+  border: 1px solid var(--line); background: var(--card); border-radius: 999px;
+  padding: 4px 10px; font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.notechip { background: var(--note-bg); border-color: var(--note-line); }
+.linkchip button { border: 0; background: none; padding: 0 0 0 4px; font-size: 15px; line-height: 1; color: var(--muted); }
+.prow.nrow .num { background: var(--note-bg); border: 1px solid var(--note-line); font-size: 12px; }
+.prow.nrow .pname { font-weight: 600; color: var(--note-ink); }
+.linkpick { max-height: 40dvh; overflow-y: auto; margin-top: 8px; border: 1px solid var(--line); border-radius: 12px; }
+.lrow { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-top: 1px solid var(--line); font-size: 15px; }
+.lrow:first-child { border-top: 0; }
+.lrow input { width: 20px; height: 20px; accent-color: var(--accent); flex: none; }
+.lrow span:first-of-type { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lrow .n, .addrow .n { color: var(--muted); font-size: 12px; flex: none; }
+.note-new { background: var(--note-bg); border-color: var(--note-line); margin: 10px 0 0; height: 46px; }
+#addSearch { margin-top: 12px; }
+.addlist { margin-top: 8px; }
+.addrow {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+  border: 0; border-top: 1px solid var(--line); background: none; padding: 11px 4px; font-size: 15px;
+}
+.addrow:first-child { border-top: 0; }
+.addrow span:first-child { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.addlist h4 { font: 600 13px/1.2 var(--body); color: var(--muted); margin: 14px 0 4px; }
+button.num { border: 0; padding: 0; }
+.pick-sub { font: 600 13px/1.2 var(--body); color: var(--muted); margin: 10px 0 0; }
+.card.flash { outline: 3px solid var(--accent); outline-offset: 2px; transition: outline-color 1.5s; }
+.day-head.small { min-height: 32px; }
+.day-head.small h4 { flex: 1; font: 600 14px/1.2 var(--body); color: var(--muted); margin: 0; }
+
 .card {
   background: var(--card); border: 1px solid var(--line); border-radius: 16px;
   padding: 14px 14px 10px; margin-bottom: 10px; box-shadow: var(--shadow);
@@ -267,8 +308,8 @@ details.past-days { background: var(--soft); box-shadow: none; }
 }
 #peek.open { display: block; }
 #peek .card { margin: 0; box-shadow: 0 8px 30px rgba(0,0,0,.25); }
-body.show-map #fab { bottom: calc(env(safe-area-inset-bottom) + 16px); }
-body.show-map.peeking #fab { display: none; }
+body.show-map .fabs { bottom: calc(env(safe-area-inset-bottom) + 16px); }
+body.show-map.peeking .fabs { display: none; }
 #todayMap { height: calc(100dvh - var(--topH, 170px) - var(--todayBarH, 0px)); width: 100%; background: var(--today-line); }
 #todayPeek {
   position: absolute; left: 10px; right: 10px; bottom: calc(env(safe-area-inset-bottom) + 12px); z-index: 460;
@@ -279,14 +320,21 @@ body.show-map.peeking #fab { display: none; }
 .leaflet-container { font: inherit; }
 .leaflet-control-attribution { font-size: 10px; }
 
-/* ---------- add button ---------- */
-#fab {
+/* ---------- add buttons ---------- */
+.fabs {
   position: fixed; right: 16px; bottom: calc(env(safe-area-inset-bottom) + 20px); z-index: 600;
+  display: flex; align-items: center; gap: 10px;
+}
+#fab {
   height: 56px; padding: 0 22px 0 18px; border-radius: 18px; border: 0;
   background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: 17px;
   display: flex; align-items: center; gap: 8px; box-shadow: 0 6px 20px rgba(217,72,15,.35);
 }
 #fab svg { width: 22px; height: 22px; }
+#noteFab {
+  height: 48px; padding: 0 16px; border-radius: 16px; border: 1px solid var(--note-line);
+  background: var(--note-bg); color: var(--ink); font-weight: 700; font-size: 15px; box-shadow: var(--shadow);
+}
 
 /* ---------- sheets ---------- */
 dialog.sheet {
@@ -382,6 +430,7 @@ details.more summary { font-size: 14px; color: var(--muted); cursor: pointer; }
 <header class="top" id="top">
   <div class="titlebar">
     <h1 id="tripTitle">Trip Pins</h1>
+    <span class="betatag" id="betaTag" hidden title="Test version: changes to places and notes still go to your Sheet">TEST</span>
     <button class="icon-btn" id="syncBtn" aria-label="Refresh">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
     </button>
@@ -453,9 +502,12 @@ details.more summary { font-size: 14px; color: var(--muted); cursor: pointer; }
   </section>
 </main>
 
-<button id="fab" aria-label="Add a place">
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add
-</button>
+<div class="fabs">
+  <button id="noteFab" aria-label="Add a note" hidden>📝 Note</button>
+  <button id="fab" aria-label="Add a place">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add
+  </button>
+</div>
 
 <!-- Add / edit sheet -->
 <dialog class="sheet" id="placeSheet">
@@ -500,6 +552,53 @@ details.more summary { font-size: 14px; color: var(--muted); cursor: pointer; }
       <button type="submit" class="btn primary" id="saveBtn">Save</button>
     </div>
   </form>
+</dialog>
+
+<!-- Add or edit a note -->
+<dialog class="sheet" id="noteSheet">
+  <form class="sheet-in" id="noteForm" method="dialog" autocomplete="off">
+    <div class="grab"></div>
+    <div class="sheet-head">
+      <h2 id="noteHead">New note</h2>
+      <button type="button" class="btn ghost" data-close>Cancel</button>
+    </div>
+    <label class="f" for="nTitle">Title</label>
+    <input class="in" id="nTitle" maxlength="120" placeholder="Buy souvenirs at the market">
+    <label class="f" for="nText">Note</label>
+    <textarea class="in" id="nText" rows="4" placeholder="Anything to remember: what, where, for whom…"></textarea>
+    <div id="nDayRow">
+      <label class="f" for="nDay">Day</label>
+      <select class="in" id="nDay"></select>
+    </div>
+    <label class="f">Places</label>
+    <div class="linkrow" id="nLinks"></div>
+    <details class="more" id="nLinkBox">
+      <summary>＋ Link places</summary>
+      <input class="in search" id="nLinkSearch" type="search" placeholder="Find a place" aria-label="Find a place to link">
+      <div class="linkpick" id="nLinkPick"></div>
+    </details>
+    <div class="status" id="noteStatus"></div>
+    <div class="sheet-foot">
+      <button type="button" class="btn danger" id="noteDel" hidden>Delete</button>
+      <button type="submit" class="btn primary" id="noteSave">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Add a place or a note to one day of the plan -->
+<dialog class="sheet" id="addSheet">
+  <div class="sheet-in">
+    <div class="grab"></div>
+    <div class="sheet-head">
+      <h2 id="addTitle">Add to a day</h2>
+      <button type="button" class="btn ghost" data-close>Done</button>
+    </div>
+    <p class="hint" id="addHint"></p>
+    <button type="button" class="btn wide note-new" id="addNewNote" data-newnote-day>📝 New note for this day</button>
+    <input class="in search" id="addSearch" type="search" placeholder="Find a place or note" aria-label="Find a place or note">
+    <div class="addlist" id="addList"></div>
+    <div class="pad-bottom"></div>
+  </div>
 </dialog>
 
 <!-- Pick a day for a place -->
@@ -580,7 +679,16 @@ details.more summary { font-size: 14px; color: var(--muted); cursor: pointer; }
       <li>Tap <kbd>📅 Plan</kbd> on a place to put it on a day. The <b>Plan</b> tab shows every day; the arrows change the order.</li>
       <li>The route button sorts a day into a short walking order, starting from its first place. The pin button shows that day on the map, numbered.</li>
       <li>The <kbd>📅 All days</kbd> chip above the List and Map picks one day to show, or the places not planned yet.</li>
-      <li>Days that have passed fold into <b>Past days</b>: ✓ for places you went, ! for ones you missed. Move a missed place with 📅, or take it off the plan with ×.</li>
+      <li>Days that have passed fold into <b>Past days</b>: ✓ for places you went, ! for ones you missed. Tap ✓ or ! to correct it, and <b>+</b> on a past day to add somewhere you went but didn't plan (it's marked visited).</li>
+    </ul>
+
+    <h3 class="sec">6. Notes</h3>
+    <ul>
+      <li><kbd>📝 Note</kbd> (next to Add) writes a note: a title, any text, and optionally a day and some places. “Buy souvenirs at the market”.</li>
+      <li>Put a note on a day and it sits at the top of that day in Plan, and in My Today on the day. The <b>+</b> on any day adds a note there too.</li>
+      <li>Notes not on a day show in the List. Ones on a day stay in Plan; <kbd>📝 Show notes on days</kbd> brings them into the List.</li>
+      <li>A place with notes shows them as yellow chips; tap one to read or edit it. Tap a place on a note to find it on the map.</li>
+      <li>Everyone on the trip sees the same notes.</li>
       <li><b>My Today</b> is just for you. On a trip day it starts with that day's plan; tap the star on any place to add or remove it.</li>
       <li>The search box finds places by name or by what's in <i>Why go?</i>.</li>
     </ul>
@@ -687,6 +795,7 @@ const ICON = {
   up: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>',
   down: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>',
   x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>',
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
   transit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="3"/><path d="M5 11h14M9 21l1.5-4M15 21l-1.5-4"/><circle cx="8.5" cy="14" r=".6" fill="currentColor"/><circle cx="15.5" cy="14" r=".6" fill="currentColor"/></svg>',
 };
 const DEMO_ITEMS = [
@@ -698,13 +807,23 @@ const DEMO_ITEMS = [
   { id: 'd6', name: 'Nakazakicho', category: 'drink', about: 'Old-house cafés and vintage shops', why: 'Slow coffee morning, away from the crowds.', address: 'Nakazaki, Kita Ward, Osaka', lat: 34.7090, lng: 135.5060 },
   { id: 'd7', name: 'Minoo Falls', category: 'outdoors', about: '33 m waterfall, 3 km forest walk', why: 'Half-day escape. Try the maple leaf tempura.', address: 'Minoo Park, Minoh', lat: 34.8530, lng: 135.4720, been: true },
 ];
+const DEMO_NOTES = [
+  { id: 'n1', added: '2026-01-01T00:00:00Z', title: 'Buy souvenirs at the market', text: 'Knives for Dad, matcha sweets for the office.', day: '', links: 'd1' },
+  { id: 'n2', added: '2026-01-02T00:00:00Z', title: 'Get an ICOCA card', text: 'Top up ¥3000 at any station machine. Works on trains and in convenience stores.', day: '', links: '' },
+];
 
 // ---------------------------------------------------------------- tiny helpers
 const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+// The test copy lives in a beta/ folder on the same site. It keeps its own storage, so
+// trying it never touches the main app's settings, offline copy or My Today. On its
+// first run it borrows the main app's Sheet connection, so there's nothing to set up.
+const BETA = /\/beta\/(index\.html)?$/.test(location.pathname);
+const NS = BETA ? 'tpbeta.' : 'tp.';
+try { if (BETA && localStorage.getItem(NS + 'cfg') == null && localStorage.getItem('tp.cfg') != null) localStorage.setItem(NS + 'cfg', localStorage.getItem('tp.cfg')); } catch (e) {}
 const store = {
-  get(k, d) { try { const v = localStorage.getItem('tp.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
-  set(k, v) { try { localStorage.setItem('tp.' + k, JSON.stringify(v)); } catch (e) {} },
+  get(k, d) { try { const v = localStorage.getItem(NS + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(NS + k, JSON.stringify(v)); } catch (e) {} },
 };
 let toastTimer;
 function toast(msg, action) {
@@ -750,6 +869,12 @@ function dayItems(iso) { return items.filter(p => dayOf(p) === iso).sort(byOrder
 // Past days: the ones before today. A place left unvisited on a past day was missed.
 const isPastDay = d => d < todayISO();
 const missed = p => { const d = dayOf(p); return !!d && isPastDay(d) && !p.been; };
+// Notes: on a day in the order they were written; linked to places by id.
+const byAdded = (a, b) => String(a.added || a.id).localeCompare(String(b.added || b.id));
+function dayNotes(iso) { return notes.filter(n => dayOf(n) === iso).sort(byAdded); }
+const noteLinkIds = n => String(n.links || '').split(',').filter(Boolean);
+const linkedPlaces = n => noteLinkIds(n).map(id => items.find(p => p.id === id)).filter(Boolean);
+const notesFor = p => notesReady() ? notes.filter(n => noteLinkIds(n).includes(p.id)) : [];
 // Days you can still plan: today onward, or every day once the trip is over.
 function openDays() { const t = todayISO(), all = tripDays(), left = all.filter(d => d >= t); return left.length ? left : all; }
 // "Wed 30 Sep": built by hand, since browsers disagree on commas and "Sept".
@@ -760,8 +885,14 @@ function dayLabel(iso) {
 }
 // Plan needs trip dates, and (on a real Sheet) a Code.gs new enough to store days.
 const planReady = () => cfg.demo || cfg.planReady;
+// Notes need a Code.gs new enough to keep them (a Notes tab in the Sheet).
+const notesReady = () => cfg.demo || cfg.notesReady;
 const planOn = () => planReady() && tripDays().length > 0;
 let items = store.get(cfg.demo ? 'demoItems' : 'items', []);
+let notes = store.get(cfg.demo ? 'demoNotes' : 'notes', []);
+const saveNotesLocal = () => store.set(cfg.demo ? 'demoNotes' : 'notes', notes);
+// Notes on a day live in the Plan (and My Today); the List shows them only when asked.
+let showDayNotes = store.get('showDayNotes', false);
 let filter = 'all';
 let planFilter = '';           // '' | 'none' (not planned) | yyyy-mm-dd (one day, in route order)
 let query = '';                // search text
@@ -802,7 +933,7 @@ let warnedAuth = false;
 
 // ---------------------------------------------------------------- API
 let lastWriteAt = 0;
-const WRITES = ['add', 'update', 'delete', 'settings', 'plan'];
+const WRITES = ['add', 'update', 'delete', 'settings', 'plan', 'noteAdd', 'noteUpdate', 'noteDelete'];
 async function api(action, payload = {}) {
   if (WRITES.includes(action)) lastWriteAt = Date.now();
   const j = await apiCall(action, payload);
@@ -895,7 +1026,19 @@ function troubleHTML(url) {
 function demoApi(action, p) {
   const wait = ms => new Promise(r => setTimeout(r, ms));
   return wait(action === 'resolve' || action === 'add' ? 700 : 150).then(() => {
-    if (action === 'list') return { ok: true, items: store.get('demoItems', DEMO_ITEMS) };
+    if (action === 'list') return { ok: true, items: store.get('demoItems', DEMO_ITEMS), notes: store.get('demoNotes', DEMO_NOTES) };
+    if (action.startsWith('note')) {
+      const ns = store.get('demoNotes', DEMO_NOTES).slice();
+      const save = () => store.set('demoNotes', ns);
+      if (action === 'noteAdd') {
+        const note = { id: 'n' + Date.now(), added: new Date().toISOString(), title: p.title, text: p.text || '', day: p.day || '', links: p.links || '' };
+        ns.push(note); save(); return { ok: true, note };
+      }
+      const i = ns.findIndex(n => n.id === p.id);
+      if (action === 'noteDelete') { if (i >= 0) ns.splice(i, 1); save(); return { ok: true }; }
+      if (i < 0) return Promise.reject(Object.assign(new Error('That note was deleted on another phone.'), { gone: true }));
+      Object.assign(ns[i], p.fields); save(); return { ok: true, note: ns[i] };
+    }
     if (action === 'resolve') {
       const q = String(p.q || '').trim();
       const name = q.replace(/https?:\/\/\S+/g, '').split('\n')[0].trim() || 'Demo place';
@@ -945,6 +1088,7 @@ async function refresh(quiet) {
     if (started < lastWriteAt) { scheduleRefresh(300); return; }
     items = j.items || [];
     store.set(cfg.demo ? 'demoItems' : 'items', items);
+    if (j.notes) { notes = j.notes; saveNotesLocal(); }   // an older Code.gs sends none
     if (j.settings && !cfg.demo) adoptSettings(j.settings);
     lastSync = Date.now(); store.set('lastSync', lastSync); offline = false; syncProblem = '';
   } catch (e) {
@@ -980,7 +1124,7 @@ function goneElsewhere(id) {
 // is a Sheet that has never had trip details (made with an older version of the app).
 function adoptSettings(st) {
   // Dates and whether the Sheet can hold a plan come from the Sheet every time.
-  const next = { start: st.start || '', end: st.end || '', planReady: !!st.plan };
+  const next = { start: st.start || '', end: st.end || '', planReady: !!st.plan, notesReady: !!st.notes };
   if (Object.keys(next).some(k => cfg[k] !== next[k])) { Object.assign(cfg, next); store.set('cfg', cfg); }
   if (st.set) {
     if (st.trip !== cfg.trip || st.near !== cfg.near) { cfg.trip = st.trip; cfg.near = st.near; store.set('cfg', cfg); }
@@ -1058,6 +1202,18 @@ function visible(forMap) {
 const dayRoute = () => planOn() && planFilter && planFilter !== 'none' ? planFilter : '';
 const faded = p => p.been && !showVisited && !dayRoute();
 
+// Notes in the List: ones not on a day always; ones on a day only with "Show notes on days"
+// (they live in the Plan). Picking a day shows that day's notes; a category hides notes.
+const matchesNoteQuery = n => !query || fold(n.title).includes(fold(query)) || fold(n.text).includes(fold(query));
+function visibleNotes() {
+  if (!notesReady() || filter !== 'all') return [];
+  const list = notes.filter(matchesNoteQuery);
+  const oneDay = planOn() && planFilter && planFilter !== 'none';
+  if (oneDay) return list.filter(n => dayOf(n) === planFilter).sort(byAdded);
+  if (planOn() && planFilter === 'none') return list.filter(n => !dayOf(n)).sort(byAdded);
+  return list.filter(n => showDayNotes || !dayOf(n)).sort(byAdded);
+}
+
 function cardHTML(p) {
   const c = catOf(p);
   const dist = distLabel(p);
@@ -1079,6 +1235,7 @@ function cardHTML(p) {
     </div>
     ${p.about ? `<p class="about">${esc(p.about)}</p>` : ''}
     ${p.why ? `<p class="why">${esc(p.why)}</p>` : ''}
+    ${(pn => pn.length ? `<div class="linkrow">${pn.map(n => `<button type="button" class="notechip" data-open-note="${esc(n.id)}">📝 ${esc(n.title || 'Note')}</button>`).join('')}</div>` : '')(notesFor(p))}
     ${hasPin(p) ? (p.address ? `<p class="addr">${esc(p.address)}</p>` : '')
                 : `<p class="addr nopin">No pin yet: tap edit, then Find</p>`}
     <div class="actions">
@@ -1119,6 +1276,8 @@ function renderChips() {
   if (!pos && items.some(hasPin)) h += `<button class="chip near" data-near>🧭 Nearest first</button>`;
   if (planOn()) h += daySelectHTML();
   if (beenCount) h += `<button class="chip" data-visited aria-pressed="${showVisited}">✓ ${showVisited ? 'Hide' : 'Show'} visited<span class="n">${beenCount}</span></button>`;
+  const onDays = notesReady() ? notes.filter(n => dayOf(n)).length : 0;
+  if (onDays) h += `<button class="chip" data-notes aria-pressed="${showDayNotes}">📝 ${showDayNotes ? 'Hide' : 'Show'} notes on days<span class="n">${onDays}</span></button>`;
   $('#chips').innerHTML = h;
 }
 
@@ -1137,9 +1296,11 @@ function renderSub() {
 
 function render() {
   $('#tripTitle').textContent = tripName() || 'Trip Pins';
-  document.title = tripName() ? `${tripName()} · Trip Pins` : 'Trip Pins';
+  document.title = (tripName() ? `${tripName()} · Trip Pins` : 'Trip Pins') + (BETA ? ' (test)' : '');
+  $('#betaTag').hidden = !BETA;
   const setUp = !!(cfg.url || cfg.demo);
   $('#fab').hidden = !setUp || view === 'today'; $('#chips').hidden = !setUp; $('#sub').hidden = !setUp;
+  $('#noteFab').hidden = $('#fab').hidden || !notesReady();
   $('#searchBox').hidden = !setUp || !items.length;
   seedMyToday();
   renderSub(); renderChips();
@@ -1154,17 +1315,21 @@ function render() {
       <p class="hint" style="margin-top:10px">Someone sent you a link? Just open it. On an iPhone home-screen app, tap Connect and paste the link.</p>
       <button class="btn" data-demo>Look around with sample places</button>
     </div>`;
-  } else if (!items.length) {
+  } else if (!items.length && !(notesReady() && notes.length)) {
     el.innerHTML = `<div class="empty"><h2>Nothing saved yet</h2>
       <p>Found somewhere good? In Google Maps tap <b>Share</b>, then pick Trip Pins (Android) or your Save Place shortcut (iPhone).</p>
       <p>Or tap <b>Add</b> and paste a link.</p></div>`;
   } else {
-    // Say how many visited places are tucked away, so they're never lost.
+    const noteList = visibleNotes();
+    // Say how many visited places and day notes are tucked away, so they're never lost.
     const hidden = showVisited ? 0 : visible(true).filter(p => p.been && !list.includes(p)).length;
-    const note = hidden ? `<p class="hidden-note">${hidden} visited place${hidden === 1 ? '' : 's'} hidden. <button type="button" class="linkish" data-visited>Show</button></p>` : '';
-    el.innerHTML = (list.length ? list.map(cardHTML).join('')
-      : query ? `<div class="empty"><p>No places match “${esc(query)}”.</p></div>`
-      : `<div class="empty"><p>Nothing here with this filter.</p></div>`) + note;
+    const dayNotesHidden = notesReady() && filter === 'all' && !planFilter && !showDayNotes ? notes.filter(n => dayOf(n) && matchesNoteQuery(n)).length : 0;
+    const tucked = (hidden ? `<p class="hidden-note">${hidden} visited place${hidden === 1 ? '' : 's'} hidden. <button type="button" class="linkish" data-visited>Show</button></p>` : '')
+      + (dayNotesHidden ? `<p class="hidden-note">${dayNotesHidden} note${dayNotesHidden === 1 ? '' : 's'} on days, in the Plan. <button type="button" class="linkish" data-notes>Show here</button></p>` : '');
+    el.innerHTML = noteList.map(noteCardHTML).join('') + (list.length ? list.map(cardHTML).join('')
+      : noteList.length ? ''
+      : query ? `<div class="empty"><p>Nothing matches “${esc(query)}”.</p></div>`
+      : `<div class="empty"><p>Nothing here with this filter.</p></div>`) + tucked;
   }
   if (mainScope.map) drawMarkers(mainScope);
   const peekId = $('#peek').dataset.id;
@@ -1184,9 +1349,11 @@ function renderToday() {
   const todays = planOn() ? dayItems(todayISO()) : [];
   $('#loadPlanBtn').hidden = !todays.some(p => !isToday(p));
   const el = $('#todayList');
-  $('#todayEmpty').textContent = n ? '' : todays.length ? 'Cleared. Add today’s plan back, or tap the star on any place.'
+  // Today's notes from the plan sit on top: reminders for the day.
+  const todayNotes = notesReady() && planOn() ? dayNotes(todayISO()) : [];
+  $('#todayEmpty').textContent = n || todayNotes.length ? '' : todays.length ? 'Cleared. Add today’s plan back, or tap the star on any place.'
     : 'Nothing here yet. Tap the star on any place to add it for today.';
-  el.innerHTML = list.map(cardHTML).join('');
+  el.innerHTML = todayNotes.map(noteCardHTML).join('') + list.map(cardHTML).join('');
   if (todayScope.map) drawMarkers(todayScope);
   const peekId = $('#todayPeek').dataset.id;
   if (peekId) { const p = items.find(x => x.id === peekId); p ? showPeek(todayScope, p) : hidePeek(todayScope); }
@@ -1309,6 +1476,7 @@ function setView(v) {
   // New places are only ever added to the shared list; Today is just a
   // favourite flag on top of it, so there's no "add" entry point here.
   $('#fab').hidden = v === 'today' || !(cfg.url || cfg.demo);
+  $('#noteFab').hidden = $('#fab').hidden || !notesReady();
   if (v === 'map') {
     setTopH();
     if (!ensureMap(mainScope)) {
@@ -1543,48 +1711,69 @@ function renderPlan() {
     const onPast = past.flatMap(dayItems), done = onPast.filter(p => p.been).length;
     return `<details class="day past-days"${openPast || !upcoming.length ? ' open' : ''}>
       <summary>Past days<span class="n">${[plural(past.length, 'day'), done ? `${done} visited` : '', missedList.length ? `${missedList.length} missed` : ''].filter(Boolean).join(' · ')}</span></summary>
-      ${past.map(d => {
-        const list = dayItems(d);
-        return `<div class="past-day"><h4>${esc(dayLabel(d))}${list.some(hasPin) ? `<button type="button" class="linkish" data-daymap="${d}">Map</button>` : ''}</h4>
-          ${list.length ? `<ol class="prows">${list.map(p => prowHTML(p, 0, 0, true)).join('')}</ol>` : '<p class="empty-day">Nothing was planned.</p>'}</div>`;
-      }).join('')}
-      ${missedList.length && upcoming.length ? '<p class="empty-day">Missed something? Tap 📅 to move it to a day still to come, or × to take it off the plan.</p>' : ''}
+      ${past.map(d => dayHTML(d, t, true)).join('')}
+      <p class="empty-day">Went somewhere you didn't plan? Tap + on that day to add it as visited. Tap ✓ or ! to correct a place.</p>
     </details>`;
   })() : '';
 
-  el.innerHTML = pastHTML + upcoming.map(d => {
-    const list = dayItems(d), label = esc(dayLabel(d));
-    return `<section class="day${d === t ? ' is-today' : ''}" data-day="${d}">
-      <header class="day-head">
-        <h3>${label}${d === t ? '<span class="tag">Today</span>' : ''}</h3>
-        <span class="n">${list.length ? plural(list.length, 'place') : ''}</span>
-        ${list.filter(hasPin).length > 2 ? `<button type="button" class="btn sq sm" data-best="${d}" aria-label="Best order for ${label}">${ICON.route}</button>` : ''}
-        ${list.some(hasPin) ? `<button type="button" class="btn sq sm" data-daymap="${d}" aria-label="Show ${label} on the map">${ICON.map}</button>` : ''}
-      </header>
-      ${list.length ? `<ol class="prows">${list.map((p, i) => prowHTML(p, i, list.length)).join('')}</ol>`
-                    : '<p class="empty-day">Nothing planned yet. Tap 📅 on a place to add it here.</p>'}
-    </section>`;
-  }).join('') + (unplanned.length ? `<details class="day unplanned"${openUnplanned ? ' open' : ''}>
-      <summary>Not planned yet<span class="n">${unplanned.length}</span></summary>
-      <ol class="prows">${sortByDistanceThenAdded(unplanned).map(p => prowHTML(p, -1)).join('')}</ol>
+  const looseNotes = notesReady() ? notes.filter(n => !dayOf(n)).sort(byAdded) : [];
+  const looseCount = unplanned.length + looseNotes.length;
+  el.innerHTML = pastHTML + upcoming.map(d => dayHTML(d, t, false)).join('')
+    + (looseCount ? `<details class="day unplanned"${openUnplanned ? ' open' : ''}>
+      <summary>Not planned yet<span class="n">${looseCount}</span></summary>
+      ${looseNotes.length ? `<ul class="prows">${looseNotes.map(n => nrowHTML(n, true)).join('')}</ul>` : ''}
+      ${unplanned.length ? `<ol class="prows">${sortByDistanceThenAdded(unplanned).map(p => prowHTML(p, -1)).join('')}</ol>` : ''}
     </details>` : '');
 }
 
-// A row in the plan. i < 0: not planned. past: a record of a past day (✓ visited, ! missed).
+// One day of the plan: its notes first, then its places in route order.
+// Past days are a record you can still fix: add what you did, tick or untick, reorder.
+function dayHTML(d, t, past) {
+  const list = dayItems(d), dn = notesReady() ? dayNotes(d) : [], label = esc(dayLabel(d));
+  const add = `<button type="button" class="btn sq sm" data-addto="${d}" aria-label="Add a place${notesReady() ? ' or note' : ''} to ${label}">${ICON.plus}</button>`;
+  const mapBtn = list.some(hasPin) ? `<button type="button" class="btn sq sm" data-daymap="${d}" aria-label="Show ${label} on the map">${ICON.map}</button>` : '';
+  const body = (dn.length ? `<ul class="prows">${dn.map(n => nrowHTML(n)).join('')}</ul>` : '')
+    + (list.length ? `<ol class="prows">${list.map((p, i) => prowHTML(p, i, list.length, past)).join('')}</ol>`
+       : dn.length ? '' : `<p class="empty-day">${past ? 'Nothing recorded for this day.' : 'Nothing planned yet. Tap + to add a place or a note.'}</p>`);
+  if (past) return `<div class="past-day" data-day="${d}"><header class="day-head small"><h4>${label}</h4>${mapBtn}${add}</header>${body}</div>`;
+  return `<section class="day${d === t ? ' is-today' : ''}" data-day="${d}">
+    <header class="day-head">
+      <h3>${label}${d === t ? '<span class="tag">Today</span>' : ''}</h3>
+      <span class="n">${list.length ? list.length + (list.length === 1 ? ' place' : ' places') : ''}</span>
+      ${list.filter(hasPin).length > 2 ? `<button type="button" class="btn sq sm" data-best="${d}" aria-label="Best order for ${label}">${ICON.route}</button>` : ''}
+      ${mapBtn}${add}
+    </header>
+    ${body}
+  </section>`;
+}
+
+// A place in the plan. i < 0: not planned. On a past day the number becomes a
+// ✓ (visited) or ! (missed) you can tap to correct.
 function prowHTML(p, i, n, past) {
   const c = catOf(p);
-  const badge = past ? (p.been ? '<span class="num done">✓</span>' : '<span class="num miss">!</span>')
+  const badge = past
+    ? `<button type="button" class="num ${p.been ? 'done' : 'miss'}" data-been aria-label="${p.been ? 'Visited. Tap to mark as missed' : 'Missed. Tap to mark as visited'}">${p.been ? '✓' : '!'}</button>`
     : `<span class="num${i < 0 ? ' emo' : ''}">${i < 0 ? CATS[c].emoji : i + 1}</span>`;
   // One tap takes a place off its day (back to Not planned); Undo is in the message.
   const unplan = `<button type="button" class="mv unplan" data-unplan aria-label="Take ${esc(p.name)} off this day">${ICON.x}</button>`;
-  const moves = past ? (p.been ? '' : `<button type="button" class="mv" data-pick aria-label="Move ${esc(p.name)} to another day">📅</button>${unplan}`)
-    : i < 0 ? `<button type="button" class="mv" data-pick aria-label="Pick a day for ${esc(p.name)}">📅</button>`
+  const moves = i < 0 ? `<button type="button" class="mv" data-pick aria-label="Pick a day for ${esc(p.name)}">📅</button>`
     : `<button type="button" class="mv" data-move="-1" aria-label="Move up"${i === 0 ? ' disabled' : ''}>${ICON.up}</button>
        <button type="button" class="mv" data-move="1" aria-label="Move down"${i === n - 1 ? ' disabled' : ''}>${ICON.down}</button>${unplan}`;
   return `<li class="prow cat-${c}${p.been ? ' been' : ''}${past && !p.been ? ' missed' : ''}" data-id="${esc(p.id)}">
     ${badge}
-    <button type="button" class="pname" data-pick>${i < 0 && !past ? '' : CATS[c].emoji + ' '}${esc(p.name || 'Untitled')}</button>
+    <button type="button" class="pname" data-pick>${i < 0 ? '' : CATS[c].emoji + ' '}${esc(p.name || 'Untitled')}</button>
     ${moves}
+  </li>`;
+}
+
+// A note in the plan: tap the title to read or edit it.
+function nrowHTML(n, loose) {
+  const links = linkedPlaces(n).length;
+  return `<li class="prow nrow" data-note="${esc(n.id)}">
+    <span class="num">📝</span>
+    <button type="button" class="pname" data-note-open>${esc(n.title || 'Note')}${links ? ` <span class="n">· ${links} place${links === 1 ? '' : 's'}</span>` : ''}</button>
+    ${loose ? `<button type="button" class="mv" data-note-pick aria-label="Pick a day for this note">📅</button>`
+            : `<button type="button" class="mv unplan" data-note-unplan aria-label="Take this note off its day">${ICON.x}</button>`}
   </li>`;
 }
 
@@ -1617,11 +1806,26 @@ function renumber(d, list) {
     .filter((c, k) => list[k].dayOrder !== c.dayOrder || dayOf(list[k]) !== d);
 }
 
-function setDay(p, d) {
+// Putting a place on a past day records that you went: it's marked visited too.
+async function setDay(p, d) {
   if (dayOf(p) === d) return;
   const last = d ? dayItems(d).reduce((m, x) => Math.max(m, x.dayOrder || 0), 0) : 0;
-  planChanges([{ id: p.id, day: d, dayOrder: d ? last + 1 : null }],
-    d ? `${p.name || 'Place'} → ${dayLabel(d)}` : `${p.name || 'Place'} taken off the plan`);
+  const change = { id: p.id, day: d, dayOrder: d ? last + 1 : null };
+  const name = p.name || 'Place';
+  if (!(d && isPastDay(d) && !p.been)) {
+    planChanges([change], d ? `${name} → ${dayLabel(d)}` : `${name} taken off the plan`);
+    return;
+  }
+  const before = { id: p.id, day: p.day || '', dayOrder: p.dayOrder == null ? null : p.dayOrder };
+  await planChanges([change]);
+  const now = items.find(x => x.id === p.id);
+  if (!now || dayOf(now) !== d) return;   // the Sheet said no; planChanges already explained
+  await toggleBeen(now);
+  toast(`${name} added to ${dayLabel(d)} as visited`, { label: 'Undo', fn: () => {
+    planChanges([before]);
+    const again = items.find(x => x.id === p.id);
+    if (again && again.been) toggleBeen(again);
+  } });
 }
 
 function movePlace(p, dir) {
@@ -1663,22 +1867,203 @@ function bestOrder(d) {
   else planChanges(ch, `${dayLabel(d)} sorted by route`);
 }
 
+// Pick a day for a place or a note. Days still to come first; past days below,
+// for recording something you did (a place put there is marked visited).
 const pickSheet = $('#pickSheet');
-let pickId = null;
-function openPlanPick(p) {
+let pick = null;   // { kind: 'place' | 'note', id }
+function openPlanPick(obj, kind = 'place') {
   if (!planOn()) { setView('plan'); return; }
-  pickId = p.id;
-  const cur = dayOf(p), t = todayISO();
-  $('#pickTitle').textContent = p.name || 'Plan';
-  // Past days are done: offer today onward, and show a past day only as where it was.
-  const was = cur && isPastDay(cur) && openDays().indexOf(cur) < 0
-    ? `<button type="button" class="btn" disabled aria-pressed="true"><span>${esc(dayLabel(cur))}</span><span class="n">${p.been ? 'visited' : 'missed'}</span></button>` : '';
-  $('#pickDays').innerHTML = was + openDays().map(d => {
-    const n = dayItems(d).length;
-    return `<button type="button" class="btn" data-setday="${d}" aria-pressed="${cur === d}">
-      <span>${esc(dayLabel(d))}${d === t ? ' · Today' : ''}</span><span class="n">${n ? n + (n === 1 ? ' place' : ' places') : ''}</span></button>`;
-  }).join('') + (cur ? '<button type="button" class="btn ghost danger" data-setday="">Take it off the plan</button>' : '');
+  pick = { kind, id: obj.id };
+  const cur = dayOf(obj), t = todayISO(), all = tripDays();
+  const up = all.filter(d => d >= t), past = all.filter(d => d < t);
+  $('#pickTitle').textContent = kind === 'note' ? `📝 ${obj.title || 'Note'}` : (obj.name || 'Plan');
+  const count = d => { const n = dayItems(d).length; return n ? n + (n === 1 ? ' place' : ' places') : ''; };
+  const btn = d => `<button type="button" class="btn" data-setday="${d}" aria-pressed="${cur === d}">
+      <span>${esc(dayLabel(d))}${d === t ? ' · Today' : ''}</span><span class="n">${count(d)}</span></button>`;
+  $('#pickDays').innerHTML = up.map(btn).join('')
+    + (past.length ? `<h4 class="pick-sub">Past days${kind === 'place' && !obj.been ? ' · marks it visited' : ''}</h4>` + past.slice().reverse().map(btn).join('') : '')
+    + (cur ? '<button type="button" class="btn ghost danger" data-setday="">Take it off the plan</button>' : '');
   pickSheet.showModal();
+}
+
+// ---------------------------------------------------------------- notes
+// Notes are free text for the trip, shared through the Sheet like places. A note can sit
+// on a day of the plan and be linked to any number of places.
+function upsertNote(note) {
+  const i = notes.findIndex(x => x.id === note.id);
+  if (i >= 0) notes[i] = note; else notes.push(note);
+  saveNotesLocal();
+}
+
+// Change some of a note's fields. The screen updates straight away; if the Sheet
+// refuses, it goes back. With `msg`, the message offers Undo.
+async function noteChange(id, fields, msg) {
+  const n = notes.find(x => x.id === id); if (!n) return;
+  const before = {};
+  for (const k of Object.keys(fields)) before[k] = n[k] == null ? '' : n[k];
+  Object.assign(n, fields); saveNotesLocal(); render();
+  try {
+    const j = await api('noteUpdate', { id, fields });
+    upsertNote(j.note); render();
+    if (msg) toast(msg, { label: 'Undo', fn: () => noteChange(id, before) });
+  } catch (e) {
+    if (e.gone) { notes = notes.filter(x => x.id !== id); saveNotesLocal(); render(); toast(e.message); return; }
+    Object.assign(n, before); saveNotesLocal(); render(); toast(e.message);
+  }
+}
+
+function setNoteDay(n, d) {
+  if (dayOf(n) === d) return;
+  const title = n.title || 'Note';
+  noteChange(n.id, { day: d }, d ? `📝 ${title} → ${dayLabel(d)}` : `📝 ${title} taken off the plan`);
+}
+
+// The note card in the List and My Today.
+function noteCardHTML(n) {
+  const d = planOn() ? dayOf(n) : null;
+  const chip = d == null ? ''
+    : `<button type="button" class="daychip${d ? ' set' : ''}" data-note-pick aria-label="${d ? 'On ' + esc(dayLabel(d)) + '. Change day' : 'Put this note on a day'}">📅 ${d ? esc(dayLabel(d)) : 'Plan'}</button>`;
+  const links = linkedPlaces(n);
+  return `<article class="card note" data-note="${esc(n.id)}">
+    <div class="cat-row"><p class="cat-tag">📝 Note</p>${chip}</div>
+    <div class="card-head"><h3>${esc(n.title || 'Note')}</h3></div>
+    ${n.text ? `<p class="why">${esc(n.text)}</p>` : ''}
+    ${links.length ? `<div class="linkrow">${links.map(p => `<button type="button" class="linkchip" data-goto="${esc(p.id)}">${CATS[catOf(p)].emoji} ${esc(p.name || 'Untitled')}</button>`).join('')}</div>` : ''}
+    <div class="actions"><button type="button" class="btn" data-note-open>${ICON.edit}Edit</button></div>
+  </article>`;
+}
+
+// ----- the note editor
+const noteSheet = $('#noteSheet');
+let noteEditing = null, noteLinksDraft = new Set();
+
+function openNote(n, preset = {}) {
+  noteEditing = n ? n.id : null;
+  $('#noteHead').textContent = n ? 'Edit note' : 'New note';
+  $('#nTitle').value = n ? n.title || '' : '';
+  $('#nText').value = n ? n.text || '' : '';
+  const t = todayISO(), all = tripDays(), cur = n ? dayOf(n) : (preset.day || '');
+  const opt = d => `<option value="${d}"${cur === d ? ' selected' : ''}>${esc(dayLabel(d))}${d === t ? ' · today' : ''}</option>`;
+  const up = all.filter(d => d >= t), past = all.filter(d => d < t);
+  $('#nDay').innerHTML = `<option value="">Not on a day</option>`
+    + (past.length ? `<optgroup label="Coming up">${up.map(opt).join('')}</optgroup><optgroup label="Past days">${past.map(opt).join('')}</optgroup>` : up.map(opt).join(''));
+  $('#nDayRow').hidden = !planOn();
+  noteLinksDraft = new Set(n ? noteLinkIds(n).filter(id => items.some(p => p.id === id)) : (preset.links || []));
+  $('#nLinkSearch').value = ''; $('#nLinkBox').open = false;
+  renderNoteLinks(); renderLinkPick();
+  $('#noteDel').hidden = !n; resetNoteDel();
+  setStatus($('#noteStatus'), '', '');
+  $('#noteSave').disabled = false; $('#noteSave').textContent = 'Save';
+  noteSheet.showModal();
+  if (!n) setTimeout(() => $('#nTitle').focus(), 50);
+}
+
+function renderNoteLinks() {
+  const list = [...noteLinksDraft].map(id => items.find(p => p.id === id)).filter(Boolean);
+  $('#nLinks').innerHTML = list.length
+    ? list.map(p => `<span class="linkchip">${CATS[catOf(p)].emoji} ${esc(p.name || 'Untitled')}<button type="button" data-unlink="${esc(p.id)}" aria-label="Unlink ${esc(p.name)}">×</button></span>`).join('')
+    : '<p class="hint" style="margin:0">No places linked yet.</p>';
+}
+
+function renderLinkPick() {
+  const q = fold($('#nLinkSearch').value.trim());
+  const list = items.filter(p => !q || fold(p.name).includes(q))
+    .sort((a, b) => String(a.name).localeCompare(String(b.name)));
+  $('#nLinkPick').innerHTML = list.map(p => `<label class="lrow"><input type="checkbox" data-link="${esc(p.id)}"${noteLinksDraft.has(p.id) ? ' checked' : ''}>
+      <span>${CATS[catOf(p)].emoji} ${esc(p.name || 'Untitled')}</span>${dayOf(p) ? `<span class="n">${esc(dayLabel(dayOf(p)))}</span>` : ''}</label>`).join('')
+    || '<p class="hint" style="padding:10px 12px;margin:0">No places match.</p>';
+}
+
+async function saveNote(ev) {
+  ev.preventDefault();
+  const title = $('#nTitle').value.trim();
+  if (!title) { setStatus($('#noteStatus'), 'bad', '<div>Give the note a title.</div>'); $('#nTitle').focus(); return; }
+  const existing = noteEditing && notes.find(x => x.id === noteEditing);
+  const fields = {
+    title, text: $('#nText').value.trim(),
+    day: planOn() ? $('#nDay').value : (existing ? existing.day || '' : ''),
+    links: [...noteLinksDraft].join(','),
+  };
+  const btn = $('#noteSave');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    if (existing) {
+      // Only what changed, so an edit on another phone isn't undone.
+      const changed = {};
+      for (const k of Object.keys(fields)) if (String(fields[k]) !== String(existing[k] == null ? '' : existing[k])) changed[k] = fields[k];
+      if (Object.keys(changed).length) { const j = await api('noteUpdate', { id: existing.id, fields: changed }); upsertNote(j.note); }
+      toast('Note saved');
+    } else {
+      const j = await api('noteAdd', fields);
+      upsertNote(j.note);
+      toast(fields.day ? `Note added to ${dayLabel(fields.day)}` : 'Note added');
+    }
+    noteSheet.close(); render();
+  } catch (e) {
+    if (e.gone) { notes = notes.filter(x => x.id !== noteEditing); saveNotesLocal(); noteSheet.close(); render(); toast(e.message); return; }
+    setStatus($('#noteStatus'), 'bad', `<div>${esc(e.message)}</div>`);
+  } finally { btn.disabled = false; btn.textContent = 'Save'; }
+}
+
+// Delete takes two taps, like places. Undo brings the note back.
+let noteDelTimer;
+function resetNoteDel() { const b = $('#noteDel'); b.classList.remove('armed'); b.textContent = 'Delete'; }
+async function deleteNote() {
+  const b = $('#noteDel');
+  const n = notes.find(x => x.id === noteEditing); if (!n) return;
+  if (!b.classList.contains('armed')) {
+    b.classList.add('armed'); b.textContent = 'Tap again to delete';
+    clearTimeout(noteDelTimer); noteDelTimer = setTimeout(resetNoteDel, 4000); return;
+  }
+  resetNoteDel(); noteSheet.close();
+  try {
+    await api('noteDelete', { id: n.id });
+    notes = notes.filter(x => x.id !== n.id); saveNotesLocal(); render();
+    toast(`Deleted 📝 ${n.title}`, { label: 'Undo', fn: async () => {
+      try { const j = await api('noteAdd', { title: n.title, text: n.text, day: n.day, links: n.links }); upsertNote(j.note); render(); }
+      catch (e) { toast(e.message); }
+    } });
+  } catch (e) { toast(e.message); }
+}
+
+// Jump from a note to one of its places: on the map if it has a pin, else in the List.
+function gotoPlace(p) {
+  if (noteSheet.open) noteSheet.close();
+  filter = 'all'; query = ''; planFilter = ''; $('#search').value = '';
+  if (hasPin(p)) {
+    setView('map'); render();
+    const go = () => { if (!mainScope.map) return setTimeout(go, 150); mainScope.map.setView([p.lat, p.lng], 16); showPeek(mainScope, p); drawMarkers(mainScope); };
+    go(); return;
+  }
+  if (p.been && !showVisited) { showVisited = true; store.set('showVisited', true); }
+  setView('list'); render();
+  const card = document.querySelector(`#list .card[data-id="${CSS.escape(p.id)}"]`);
+  if (card) { card.scrollIntoView({ behavior: 'smooth', block: 'center' }); card.classList.add('flash'); setTimeout(() => card.classList.remove('flash'), 1600); }
+}
+
+// ----- add a place or a note to one day
+const addSheet = $('#addSheet');
+let addDay = '';
+function openAddTo(d) {
+  addDay = d;
+  $('#addTitle').textContent = `Add to ${dayLabel(d)}`;
+  $('#addHint').textContent = isPastDay(d) ? 'A past day: places you add here are marked visited.' : '';
+  $('#addHint').hidden = !isPastDay(d);
+  $('#addNewNote').hidden = !notesReady();
+  $('#addSearch').value = '';
+  renderAddList();
+  addSheet.showModal();
+}
+function renderAddList() {
+  const q = fold($('#addSearch').value.trim());
+  const where = x => dayOf(x) ? dayLabel(dayOf(x)) : 'Not planned';
+  const places = items.filter(p => dayOf(p) !== addDay && (!q || fold(p.name).includes(q)))
+    .sort((a, b) => (!!dayOf(a) - !!dayOf(b)) || String(a.name).localeCompare(String(b.name)));
+  const ns = notesReady() ? notes.filter(n => dayOf(n) !== addDay && (!q || fold(n.title).includes(q) || fold(n.text).includes(q))) : [];
+  $('#addList').innerHTML =
+    (ns.length ? `<h4>Notes</h4>${ns.map(n => `<button type="button" class="addrow" data-add-note="${esc(n.id)}"><span>📝 ${esc(n.title || 'Note')}</span><span class="n">${esc(where(n))}</span></button>`).join('')}` : '')
+    + (places.length ? `<h4>Places</h4>${places.map(p => `<button type="button" class="addrow" data-add-place="${esc(p.id)}"><span>${CATS[catOf(p)].emoji} ${esc(p.name || 'Untitled')}</span><span class="n">${esc(where(p))}${p.been ? ' · ✓' : ''}</span></button>`).join('')}` : '')
+    || `<p class="hint">${q ? 'Nothing matches.' : 'Everything is already on this day.'}</p>`;
 }
 
 // ---------------------------------------------------------------- settings
@@ -1734,9 +2119,10 @@ async function connectTo(url, key) {
   if (newSheet) { cfg.trip = ''; cfg.near = ''; }        // never carry one Sheet's trip into another
   const st = j.settings || {};
   if (st.set) { cfg.trip = st.trip; cfg.near = st.near; }
-  cfg.start = st.start || ''; cfg.end = st.end || ''; cfg.planReady = !!st.plan;
+  cfg.start = st.start || ''; cfg.end = st.end || ''; cfg.planReady = !!st.plan; cfg.notesReady = !!st.notes;
   store.set('cfg', cfg);
   items = j.items || []; store.set('items', items);
+  notes = j.notes || []; store.set('notes', notes);
   lastSync = Date.now(); offline = false; syncProblem = ''; warnedAuth = false;
   pendingJoin = null;
   render();
@@ -1829,7 +2215,8 @@ function disconnect() {
     b.classList.add('armed'); b.textContent = 'Tap again: this phone forgets the Sheet';
     clearTimeout(discTimer); discTimer = setTimeout(resetDisconnect, 4000); return;
   }
-  Object.assign(cfg, { url: '', key: '', trip: '', near: '', start: '', end: '', planReady: false });
+  Object.assign(cfg, { url: '', key: '', trip: '', near: '', start: '', end: '', planReady: false, notesReady: false });
+  notes = []; store.set('notes', []);
   store.set('cfg', cfg); items = []; store.set('items', []);
   syncProblem = ''; offline = false;
   setSheet.close(); render(); toast('Disconnected. Your places are still in the Sheet.');
@@ -1838,6 +2225,7 @@ function disconnect() {
 function toggleDemo() {
   cfg.demo = !cfg.demo; store.set('cfg', cfg);
   items = cfg.demo ? store.get('demoItems', DEMO_ITEMS) : store.get('items', []);
+  notes = cfg.demo ? store.get('demoNotes', DEMO_NOTES) : store.get('notes', []);
   if (setSheet.open) setSheet.close();
   render(); refresh(true);
   toast(cfg.demo ? 'Demo mode: changes stay on this phone' : 'Demo off');
@@ -1883,10 +2271,40 @@ document.addEventListener('click', e => {
   if (t.hasAttribute('data-near')) { startLocating(true); return; }
   if (t.hasAttribute('data-clear-today')) { clearTodayTap(); return; }
   if (t.dataset.cat) { chosenCat = t.dataset.cat; catButtons(chosenCat); return; }
+  // ----- notes
+  if (t.hasAttribute('data-notes')) {
+    showDayNotes = !showDayNotes; store.set('showDayNotes', showDayNotes); render(); return;
+  }
+  if (t.dataset.openNote) { const n = notes.find(x => x.id === t.dataset.openNote); if (n) openNote(n); return; }
+  if (t.dataset.goto) { const p = items.find(x => x.id === t.dataset.goto); if (p) gotoPlace(p); return; }
+  if (t.dataset.unlink) { noteLinksDraft.delete(t.dataset.unlink); renderNoteLinks(); renderLinkPick(); return; }
+  const noteEl = t.closest('[data-note]');
+  if (noteEl) {
+    const n = notes.find(x => x.id === noteEl.dataset.note); if (!n) return;
+    if (t.hasAttribute('data-note-open')) openNote(n);
+    else if (t.hasAttribute('data-note-pick')) openPlanPick(n, 'note');
+    else if (t.hasAttribute('data-note-unplan')) setNoteDay(n, '');
+    return;
+  }
+  // ----- adding to one day
+  if (t.dataset.addto) { openAddTo(t.dataset.addto); return; }
+  if (t.hasAttribute('data-newnote-day')) { addSheet.close(); openNote(null, { day: addDay }); return; }
+  if (t.dataset.addPlace) {
+    const p = items.find(x => x.id === t.dataset.addPlace);
+    if (p) setDay(p, addDay).then(renderAddList);
+    return;
+  }
+  if (t.dataset.addNote) {
+    const n = notes.find(x => x.id === t.dataset.addNote);
+    if (n) { setNoteDay(n, addDay); renderAddList(); }
+    return;
+  }
   // ----- plan
   if (t.hasAttribute('data-setday')) {
-    const p = items.find(x => x.id === pickId);
-    pickSheet.close(); if (p) setDay(p, t.dataset.setday); return;
+    const p = pick && (pick.kind === 'note' ? notes : items).find(x => x.id === pick.id);
+    pickSheet.close();
+    if (p) pick.kind === 'note' ? setNoteDay(p, t.dataset.setday) : setDay(p, t.dataset.setday);
+    return;
   }
   if (t.hasAttribute('data-set-dates')) { openSettings(); setTimeout(() => $('#sStart').focus(), 60); return; }
   if (t.hasAttribute('data-load-plan')) {
@@ -1904,6 +2322,7 @@ document.addEventListener('click', e => {
   if (row) {
     const p = items.find(x => x.id === row.dataset.id); if (!p) return;
     if (t.dataset.move) movePlace(p, +t.dataset.move);
+    else if (t.hasAttribute('data-been')) toggleBeen(p);
     else if (t.hasAttribute('data-unplan')) setDay(p, '');
     else if (t.hasAttribute('data-pick')) openPlanPick(p);
     return;
@@ -1932,10 +2351,20 @@ $('#tabToday').onclick = () => setView('today');
 $('#tabPlan').onclick = () => setView('plan');
 $('#search').addEventListener('input', () => { query = $('#search').value.trim(); hidePeek(mainScope); render(); });
 document.addEventListener('change', e => {
+  if (e.target.dataset && e.target.dataset.link) {
+    if (e.target.checked) noteLinksDraft.add(e.target.dataset.link); else noteLinksDraft.delete(e.target.dataset.link);
+    renderNoteLinks(); return;
+  }
   if (e.target.id !== 'dayPick') return;
   planFilter = e.target.value; hidePeek(mainScope); render();
   if (mainScope.map) fitAll(mainScope);
 });
+$('#noteForm').addEventListener('submit', saveNote);
+$('#noteDel').onclick = deleteNote;
+$('#noteFab').onclick = () => openNote(null, planFilter && planFilter !== 'none' && planOn() ? { day: planFilter } : {});
+$('#nLinkSearch').addEventListener('input', renderLinkPick);
+$('#nTitle').addEventListener('input', () => setStatus($('#noteStatus'), '', ''));
+$('#addSearch').addEventListener('input', renderAddList);
 document.addEventListener('toggle', e => {
   if (!e.target.matches) return;
   if (e.target.matches('details.unplanned')) openUnplanned = e.target.open;

@@ -23,6 +23,10 @@ var SHEET_NAME = 'Places';
 var COLUMNS = ['id', 'added', 'name', 'category', 'about', 'why', 'address',
                'lat', 'lng', 'placeId', 'link', 'been', 'day', 'dayOrder'];
 var TEXT_COLUMNS = ['id', 'day'];   // stop Sheets turning ids into numbers and days into dates
+// Notes: free text for the trip ("Buy souvenirs at the market"), optionally on a day,
+// linked to any number of places (their ids, comma-separated).
+var NOTES_SHEET = 'Notes';
+var NOTE_COLUMNS = ['id', 'added', 'title', 'text', 'day', 'links'];
 var CATEGORIES = ['eat', 'drink', 'see', 'shop', 'outdoors', 'other'];
 
 // ---------------------------------------------------------------- setup
@@ -122,7 +126,7 @@ function ping_() {
   var keySet = !!PropertiesService.getScriptProperties().getProperty('KEY');
   var ready = keySet && !!ss;
   return {
-    ok: true, app: 'Trip Pins', version: 7,
+    ok: true, app: 'Trip Pins', version: 8,
     attachedToSheet: !!ss, setupDone: keySet,
     message: ready
       ? 'Your Sheet is reachable. Paste this page\'s address (ending in /exec) and your key into the app.'
@@ -142,13 +146,16 @@ function handle_(req) {
     }
 
     var action = String(req.action || 'list');
-    if (action === 'list') out = { ok: true, items: listItems_(), settings: getSettings_() };
+    if (action === 'list') out = { ok: true, items: listItems_(), notes: listNotes_(), settings: getSettings_() };
     else if (action === 'resolve') out = { ok: true, place: resolve_(req.q, req.near || getSettings_().near) };
     else if (action === 'settings') out = { ok: true, settings: saveSettings_(req) };
     else if (action === 'add') out = addItem_(req);
     else if (action === 'update') out = updateItem_(req);
     else if (action === 'delete') out = deleteItem_(req);
     else if (action === 'plan') out = planItems_(req);
+    else if (action === 'noteAdd') out = addNote_(req);
+    else if (action === 'noteUpdate') out = updateNote_(req);
+    else if (action === 'noteDelete') out = deleteNote_(req);
     else throw new Error('Unknown action: ' + action);
   } catch (err) {
     out = { ok: false, error: String(err && err.message || err) };
@@ -167,7 +174,8 @@ function getSettings_() {
     start: p.getProperty('START') || '', end: p.getProperty('END') || '',
     // "set" tells a blank value someone chose apart from one nobody has set yet.
     set: trip !== null || near !== null,
-    plan: true   // tells the app this script can store a trip plan
+    plan: true,   // tells the app this script can store a trip plan
+    notes: true   // … and notes
   };
 }
 
@@ -364,6 +372,114 @@ function planItems_(req) {
   } finally { lock.releaseLock(); }
   // Ids left over were deleted on another phone.
   return { ok: true, items: out, gone: Object.keys(byId) };
+}
+
+// ---------------------------------------------------------------- notes
+
+function getNotesSheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(NOTES_SHEET);
+  if (!sheet) {
+    sheet = ss.insertSheet(NOTES_SHEET);
+    sheet.getRange(1, 1, 1, NOTE_COLUMNS.length).setValues([NOTE_COLUMNS]).setFontWeight('bold');
+    ['id', 'day'].forEach(function (c) {
+      sheet.getRange(1, NOTE_COLUMNS.indexOf(c) + 1, sheet.getMaxRows(), 1).setNumberFormat('@');
+    });
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+function listNotes_() {
+  var values = getNotesSheet_().getDataRange().getValues();
+  var head = values.shift() || [];
+  return values.filter(function (r) { return r[0] !== ''; }).map(function (r) {
+    var o = {};
+    head.forEach(function (h, i) { o[h] = r[i]; });
+    return cleanNote_(o);
+  });
+}
+
+function cleanNote_(o) {
+  o.id = String(o.id);
+  if (Object.prototype.toString.call(o.added) === '[object Date]') o.added = o.added.toISOString();
+  o.added = o.added == null ? '' : String(o.added);
+  o.title = o.title == null ? '' : String(o.title);
+  o.text = o.text == null ? '' : String(o.text);
+  o.day = day_(o.day);
+  o.links = links_(o.links);
+  return o;
+}
+
+// Place ids, comma-separated, no duplicates or junk.
+function links_(v) {
+  var seen = {};
+  return String(v == null ? '' : v).split(',').map(function (s) { return s.trim(); })
+    .filter(function (s) { return /^[\w-]{1,40}$/.test(s) && !seen[s] && (seen[s] = true); })
+    .join(',').slice(0, 4000);
+}
+
+function noteFields_(f) {
+  var out = {};
+  if (f.title !== undefined) out.title = String(f.title).trim().slice(0, 120);
+  if (f.text !== undefined) out.text = String(f.text).trim().slice(0, 4000);
+  if (f.day !== undefined) out.day = day_(f.day);
+  if (f.links !== undefined) out.links = links_(f.links);
+  return out;
+}
+
+function addNote_(req) {
+  var f = noteFields_(req);
+  if (!f.title) throw new Error('A note needs a title.');
+  var note = { id: 'n' + Utilities.getUuid().slice(0, 8), added: new Date().toISOString(), text: '', day: '', links: '' };
+  for (var k in f) note[k] = f[k];
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    var sheet = getNotesSheet_();
+    var head = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    sheet.appendRow(head.map(function (h) { return note[h] == null ? '' : note[h]; }));
+  } finally { lock.releaseLock(); }
+  return { ok: true, note: note };
+}
+
+// Send only the fields that changed, so two phones editing different parts don't clash.
+function updateNote_(req) {
+  var id = String(req.id || '');
+  var fields = req.fields || {};
+  if (typeof fields === 'string') fields = JSON.parse(fields);
+  var f = noteFields_(fields);
+  if (f.title === '') throw new Error('A note needs a title.');
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    var sheet = getNotesSheet_();
+    var values = sheet.getDataRange().getValues();
+    var head = values[0];
+    for (var r = 1; r < values.length; r++) {
+      if (String(values[r][0]) !== id) continue;
+      head.forEach(function (h, i) { if (h in f) values[r][i] = f[h]; });
+      sheet.getRange(r + 1, 1, 1, head.length).setValues([values[r]]);
+      var o = {};
+      head.forEach(function (h, i) { o[h] = values[r][i]; });
+      return { ok: true, note: cleanNote_(o) };
+    }
+  } finally { lock.releaseLock(); }
+  return { ok: false, gone: true, error: 'That note was deleted on another phone.' };
+}
+
+function deleteNote_(req) {
+  var id = String(req.id || '');
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    var sheet = getNotesSheet_();
+    var ids = sheet.getRange(1, 1, sheet.getLastRow(), 1).getValues();
+    for (var r = ids.length - 1; r >= 1; r--) {
+      if (String(ids[r][0]) === id) { sheet.deleteRow(r + 1); return { ok: true }; }
+    }
+  } finally { lock.releaseLock(); }
+  return { ok: true, alreadyGone: true };
 }
 
 function deleteItem_(req) {

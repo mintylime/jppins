@@ -162,6 +162,12 @@ Two phones can save at exactly the same moment; the Sheet takes them one at a ti
   - The *📅 All days* chip opens a picker to show one day, or the places not planned yet, on the List and Map.
   - Days that have passed fold into **Past days**: ✓ for places you went, ! for ones you missed. The day picker only offers today onward.
   - The plan lives in two columns of the Sheet, **day** and **dayOrder**, added by the script the first time it runs.
+  - Past days stay editable: tap ✓ or ! to correct a place, or **+** on a past day to add somewhere you went but didn't plan (it's marked visited).
+- **Notes** (📝 Note, next to Add) hold anything that isn't a place: "Buy souvenirs at the market", "ICOCA card: top up at any station". Each has a title and text, and can sit on a day and be linked to any number of places.
+  - On a day, a note sits at the top of that day in Plan, and in My Today on the day. The **+** on any day adds a note there too.
+  - Notes not on a day show in the List; ones on a day stay in Plan unless you tap *📝 Show notes on days*.
+  - A place's card shows its notes as yellow chips. Tap one to read or edit it; tap a place on a note to find it on the map.
+  - Notes live in a **Notes** tab in the Sheet, made by the script the first time it runs.
 - **My Today** is your own shortlist, kept on your phone only. On a trip day it starts with that day's plan; the star on any card adds or removes a place, and **Clear day** empties it.
 - **Go** opens Google Maps with directions. The **🚆** button next to it opens public transport directions from where you are: trains, subway and buses, with times, platforms and fares. The square arrow button opens the place's Google Maps page (hours, reviews, photos).
 - **✓** marks a place as visited. Visited places are hidden in the List and faded on the Map; the chip *✓ Show visited* brings them back (tap again to hide).
@@ -169,6 +175,14 @@ Two phones can save at exactly the same moment; the Sheet takes them one at a ti
 - **Saved the wrong thing?** Tap **Undo** in the message that pops up after saving. Later on, open **Edit** and tap **Delete** twice (the first tap turns it red, the second removes it). Deleting a row in the Sheet works too.
 - You can also tidy or bulk-edit straight in the Google Sheet; the app picks up changes when you reopen it.
 - The app keeps a copy on the phone, so the list (and map tiles you've already viewed) still work on a weak signal. Saving needs a connection.
+
+## Trying a new version first (beta)
+
+New versions can go into the `beta/` folder before they replace the app: the test copy is at the same address with `/beta/` on the end (e.g. https://mintylime.github.io/jppins/beta/) and has a red **TEST** tag in the title bar.
+
+- It keeps its own settings, offline copy and My Today, so trying it never touches the main app. The first time it opens, it borrows the main app's Sheet connection.
+- It works on the **same Sheet**: places, plans and notes you change in the test copy are real. **Settings → Try demo** in the test copy plays with sample data instead.
+- When it's good, `beta/index.html` is copied over `index.html`. They're the same file: it notices on its own which folder it's in.
 
 ## If it won't connect
 
@@ -201,6 +215,7 @@ Google sometimes changes the shape of its links. When a lookup misses, the place
 | `index.html` | The whole app |
 | `manifest.webmanifest` | Lets phones install it, and puts it in Android's share sheet |
 | `sw.js` | Offline support |
+| `beta/` | A test copy of the app (see *Trying a new version first*) |
 | `icon-*.png`, `apple-touch-icon.png` | Home-screen icons |
 | `Code.gs` | The Google Sheet backend. It runs in Apps Script; the copy here is for reference and holds no key |
 
